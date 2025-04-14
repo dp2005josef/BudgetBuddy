@@ -1,15 +1,16 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { ClientService } from '@core/services/client.service';
-import { AuditService } from '@core/services/audit.service';
-import { Client } from '@core/models/client.model';
-import { AuditLog } from '@core/models/audit.model';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { catchError, forkJoin, of } from 'rxjs';
+import { catchError, finalize, forkJoin, of } from 'rxjs';
+import { ClientService } from '../../core/services/client.service';
+import { AuditService } from '../../core/services/audit.service';
+import { Client } from '../../core/models/client.model';
+import { AuditLog } from '../../core/models/audit.model';
 
 @Component({
   selector: 'app-dashboard',
-  templateUrl: './dashboard.component.html'
+  templateUrl: './dashboard.component.html',
+  styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
   clients: Client[] = [];
@@ -22,7 +23,7 @@ export class DashboardComponent implements OnInit {
     private auditService: AuditService,
     private router: Router,
     private snackBar: MatSnackBar
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadDashboardData();
@@ -39,25 +40,25 @@ export class DashboardComponent implements OnInit {
           return of([]);
         })
       ),
-      logs: this.auditService.getRecentLogs({ pageSize: 5, pageIndex: 1 }).pipe(
+      logs: this.auditService.getRecentLogs({ pageSize: 5, pageIndex: 0 }).pipe(
         catchError(error => {
           console.error('Error loading audit logs:', error);
-          return of({ items: [], pageIndex: 1, pageSize: 5, totalItemCount: 0 });
+          return of({ items: [], pageIndex: 0, pageSize: 5, totalItemCount: 0 });
         })
       )
-    }).subscribe({
-      next: (results) => {
-        this.clients = results.clients;
-        this.recentLogs = results.logs.items;
+    }).pipe(
+      finalize(() => {
         this.isLoading = false;
+      })
+    ).subscribe({
+      next: (data) => {
+        this.clients = data.clients;
+        this.recentLogs = data.logs.items;
       },
-      error: () => {
-        this.isLoading = false;
+      error: (error) => {
+        console.error('Dashboard load error:', error);
         this.dashboardError = true;
-        this.snackBar.open('Failed to load dashboard data', 'Close', {
-          duration: 5000,
-          panelClass: ['error-snackbar']
-        });
+        this.snackBar.open('Erro ao carregar os dados do dashboard', 'Fechar', { duration: 5000 });
       }
     });
   }
@@ -76,31 +77,32 @@ export class DashboardComponent implements OnInit {
 
   getClientStatusClass(client: Client): string {
     if (!client.isActive) {
-      return 'inactive-status';
+      return 'status-inactive';
     }
     
-    // Check if last execution was within the last 24 hours
-    if (client.lastExecutionTime) {
-      const lastExecution = new Date(client.lastExecutionTime);
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      
-      if (lastExecution > yesterday) {
-        return 'success-status';
-      }
+    if (!client.lastExecutionTime) {
+      return 'status-pending';
     }
     
-    return 'warning-status';
+    const now = new Date();
+    const lastExecution = new Date(client.lastExecutionTime);
+    const daysDifference = Math.floor((now.getTime() - lastExecution.getTime()) / (1000 * 3600 * 24));
+    
+    if (daysDifference > 1) {
+      return 'status-inactive';
+    }
+    
+    return 'status-active';
   }
 
   getLevelClass(level: string): string {
     switch (level.toLowerCase()) {
       case 'error':
-        return 'error-level';
+        return 'text-danger';
       case 'warning':
-        return 'warning-level';
+        return 'text-warning';
       case 'information':
-        return 'info-level';
+        return 'text-info';
       default:
         return '';
     }

@@ -1,13 +1,13 @@
 import { Injectable } from '@angular/core';
 import {
-  HttpRequest,
-  HttpHandler,
   HttpEvent,
   HttpInterceptor,
+  HttpHandler,
+  HttpRequest,
   HttpErrorResponse
 } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
-import { catchError, filter, take, switchMap } from 'rxjs/operators';
+import { catchError, filter, switchMap, take, finalize } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { Router } from '@angular/router';
 
@@ -23,15 +23,15 @@ export class TokenInterceptor implements HttpInterceptor {
 
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     const token = this.authService.getToken();
-
+    
     if (token) {
       request = this.addToken(request, token);
     }
 
     return next.handle(request).pipe(
-      catchError(error => {
+      catchError((error: HttpErrorResponse) => {
         if (error instanceof HttpErrorResponse && error.status === 401) {
-          // Token expired, redirect to login
+          // Token expirado ou inválido, deslogue o usuário
           this.authService.logout();
           this.router.navigate(['/login']);
         }

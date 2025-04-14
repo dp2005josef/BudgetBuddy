@@ -1,46 +1,20 @@
-<div class="sidebar-container">
-  <mat-nav-list>
-    <ng-container *ngFor="let item of navItems">
-      <a mat-list-item 
-         [routerLink]="item.route" 
-         [class.active]="item.active"
-         class="nav-item">
-        <mat-icon class="nav-icon">{{ item.icon }}</mat-icon>
-        <span class="nav-label">{{ item.label }}</span>
-      </a>
-    </ng-container>
-  </mat-nav-list>
-</div>
-
-<style>
-  .sidebar-container {
-    height: 100%;
-  }
-  
-  .nav-item {
-    display: flex;
-    align-items: center;
-    height: 48px;
-    margin: 8px 0;
-    border-radius: 0 24px 24px 0;
-    padding-left: 16px;
-  }
-  
-  .nav-icon {
-    margin-right: 16px;
-    color: rgba(0, 0, 0, 0.54);
-  }
-  
-  .nav-label {
-    font-weight: 500;
-  }
-  
-  .active {
-    background-color: rgba(0, 0, 0, 0.05);
-    color: #3f51b5;
-  }
-  
-  .active .nav-icon {
-    color: #3f51b5;
-  }
-</style>
+<mat-nav-list>
+  <a mat-list-item routerLink="/dashboard" routerLinkActive="active">
+    <mat-icon matListItemIcon>dashboard</mat-icon>
+    <span matListItemTitle>Dashboard</span>
+  </a>
+  <a mat-list-item routerLink="/clients" routerLinkActive="active">
+    <mat-icon matListItemIcon>business</mat-icon>
+    <span matListItemTitle>Clientes</span>
+  </a>
+  <ng-container *ngIf="isAdmin$ | async">
+    <a mat-list-item routerLink="/users" routerLinkActive="active">
+      <mat-icon matListItemIcon>people</mat-icon>
+      <span matListItemTitle>Usuários</span>
+    </a>
+    <a mat-list-item routerLink="/audit-logs" routerLinkActive="active">
+      <mat-icon matListItemIcon>history</mat-icon>
+      <span matListItemTitle>Logs</span>
+    </a>
+  </ng-container>
+</mat-nav-list>

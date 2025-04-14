@@ -17,7 +17,7 @@ export interface CreateUserRequest {
 
 export interface UpdateUserRequest {
   name: string;
-  password: string;
+  password?: string;
   roles: string[];
   isActive: boolean;
 }

@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: ''  // Should be set during deployment or read from environment variables
+  apiUrl: '' // Será preenchido com a URL de produção
 };

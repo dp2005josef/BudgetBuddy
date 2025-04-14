@@ -1,21 +1,19 @@
-<div class="app-container">
-  <ng-container *ngIf="isAuthenticated; else loginTemplate">
+<ng-container *ngIf="!(isAuthenticated$ | async); else authenticatedLayout">
+  <router-outlet></router-outlet>
+</ng-container>
+
+<ng-template #authenticatedLayout>
+  <div class="app-container">
     <app-header></app-header>
     <mat-sidenav-container class="sidenav-container">
-      <mat-sidenav mode="side" opened class="sidenav">
+      <mat-sidenav #sidenav mode="side" opened class="sidenav" fixedInViewport="true">
         <app-sidebar></app-sidebar>
       </mat-sidenav>
-      <mat-sidenav-content class="content">
+      <mat-sidenav-content class="sidenav-content">
         <div class="content-wrapper">
           <router-outlet></router-outlet>
         </div>
       </mat-sidenav-content>
     </mat-sidenav-container>
-  </ng-container>
-  
-  <ng-template #loginTemplate>
-    <div class="login-container">
-      <router-outlet></router-outlet>
-    </div>
-  </ng-template>
-</div>
+  </div>
+</ng-template>

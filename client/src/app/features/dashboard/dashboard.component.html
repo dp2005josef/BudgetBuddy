@@ -1,272 +1,124 @@
-<div class="dashboard-container">
+<div class="container">
   <div class="dashboard-header">
     <h1>Dashboard</h1>
-    <button mat-raised-button color="primary" routerLink="/clients/new">
-      <mat-icon>add</mat-icon>
-      New Client
-    </button>
+    <div class="refresh-button">
+      <button mat-mini-fab color="primary" (click)="loadDashboardData()" matTooltip="Atualizar dados">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
   </div>
 
-  <div *ngIf="isLoading" class="loading-container">
+  <div class="loading-container" *ngIf="isLoading">
     <mat-spinner></mat-spinner>
   </div>
 
-  <div *ngIf="dashboardError" class="error-container">
-    <mat-icon>error_outline</mat-icon>
-    <p>Failed to load dashboard data</p>
-    <button mat-raised-button color="primary" (click)="loadDashboardData()">Retry</button>
+  <div class="dashboard-error" *ngIf="dashboardError">
+    <mat-card appearance="outlined">
+      <mat-card-content>
+        <div class="error-message">
+          <mat-icon color="warn">error</mat-icon>
+          <span>Ocorreu um erro ao carregar os dados do dashboard. Tente novamente mais tarde.</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
   </div>
 
-  <div *ngIf="!isLoading && !dashboardError" class="dashboard-content">
-    <!-- Clients Summary -->
-    <mat-card class="dashboard-card">
+  <div class="dashboard-content" *ngIf="!isLoading && !dashboardError">
+    <!-- Clientes ativos -->
+    <mat-card appearance="outlined" class="dashboard-card">
       <mat-card-header>
-        <mat-card-title>
-          <div class="card-title-container">
-            <span>ETL Clients</span>
-            <button mat-button color="primary" (click)="navigateToClientList()">View All</button>
-          </div>
-        </mat-card-title>
+        <mat-card-title>Clientes ativos</mat-card-title>
+        <button mat-button color="primary" (click)="navigateToClientList()">Ver todos</button>
       </mat-card-header>
       <mat-card-content>
-        <div *ngIf="clients.length === 0" class="empty-list">
-          <mat-icon>business</mat-icon>
-          <p>No clients found</p>
-          <button mat-raised-button color="primary" routerLink="/clients/new">Add Client</button>
+        <div *ngIf="clients.length === 0" class="empty-state">
+          <mat-icon>business_off</mat-icon>
+          <p>Nenhum cliente encontrado</p>
         </div>
+        <div class="client-list-container" *ngIf="clients.length > 0">
+          <table mat-table [dataSource]="clients" class="client-table">
+            <!-- Nome do cliente -->
+            <ng-container matColumnDef="clientName">
+              <th mat-header-cell *matHeaderCellDef>Nome</th>
+              <td mat-cell *matCellDef="let client">
+                <a (click)="navigateToClientDetail(client.id)" class="client-link">
+                  {{client.clientName}}
+                </a>
+              </td>
+            </ng-container>
 
-        <mat-nav-list *ngIf="clients.length > 0">
-          <a mat-list-item *ngFor="let client of clients.slice(0, 5)" (click)="navigateToClientDetail(client.id)" class="client-list-item">
-            <div class="client-item-content">
-              <div class="client-info">
-                <span class="client-name">{{ client.clientName }}</span>
-                <span class="client-last-execution" *ngIf="client.lastExecutionTime">
-                  Last run: {{ client.lastExecutionTime | date:'medium' }}
+            <!-- Status -->
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let client">
+                <span [ngClass]="getClientStatusClass(client)">
+                  <mat-icon *ngIf="client.isActive && client.lastExecutionTime" class="status-icon">check_circle</mat-icon>
+                  <mat-icon *ngIf="client.isActive && !client.lastExecutionTime" class="status-icon">pending</mat-icon>
+                  <mat-icon *ngIf="!client.isActive" class="status-icon">cancel</mat-icon>
+                  {{client.isActive ? (client.lastExecutionTime ? 'Ativo' : 'Pendente') : 'Inativo'}}
                 </span>
-                <span class="client-last-execution" *ngIf="!client.lastExecutionTime">
-                  Never executed
-                </span>
-              </div>
-              
-              <div class="client-status">
-                <span class="status-indicator" [ngClass]="getClientStatusClass(client)"></span>
-                <span>{{ client.isActive ? 'Active' : 'Inactive' }}</span>
-              </div>
-            </div>
-          </a>
-        </mat-nav-list>
+              </td>
+            </ng-container>
+
+            <!-- Última execução -->
+            <ng-container matColumnDef="lastExecution">
+              <th mat-header-cell *matHeaderCellDef>Última execução</th>
+              <td mat-cell *matCellDef="let client">
+                {{client.lastExecutionTime ? (client.lastExecutionTime | date:'dd/MM/yyyy HH:mm') : 'Nunca executado'}}
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="['clientName', 'status', 'lastExecution']"></tr>
+            <tr mat-row *matRowDef="let row; columns: ['clientName', 'status', 'lastExecution']"></tr>
+          </table>
+        </div>
       </mat-card-content>
     </mat-card>
 
-    <!-- Recent Activity -->
-    <mat-card class="dashboard-card">
+    <!-- Logs recentes -->
+    <mat-card appearance="outlined" class="dashboard-card">
       <mat-card-header>
-        <mat-card-title>
-          <div class="card-title-container">
-            <span>Recent Audit Logs</span>
-            <button mat-button color="primary" (click)="navigateToAuditLogs()">View All</button>
-          </div>
-        </mat-card-title>
+        <mat-card-title>Logs recentes</mat-card-title>
+        <button mat-button color="primary" (click)="navigateToAuditLogs()">Ver todos</button>
       </mat-card-header>
       <mat-card-content>
-        <div *ngIf="recentLogs.length === 0" class="empty-list">
-          <mat-icon>receipt_long</mat-icon>
-          <p>No logs found</p>
+        <div *ngIf="recentLogs.length === 0" class="empty-state">
+          <mat-icon>history_toggle_off</mat-icon>
+          <p>Nenhum log encontrado</p>
         </div>
+        <div class="log-list-container" *ngIf="recentLogs.length > 0">
+          <table mat-table [dataSource]="recentLogs" class="log-table">
+            <!-- ID -->
+            <ng-container matColumnDef="id">
+              <th mat-header-cell *matHeaderCellDef>ID</th>
+              <td mat-cell *matCellDef="let log">{{log.id}}</td>
+            </ng-container>
 
-        <div *ngIf="recentLogs.length > 0" class="audit-logs-list">
-          <div *ngFor="let log of recentLogs" class="audit-log-item">
-            <div class="log-header">
-              <span class="log-level" [ngClass]="getLevelClass(log.level)">{{ log.level }}</span>
-              <span class="log-time">{{ log.timeStamp | date:'medium' }}</span>
-            </div>
-            <div class="log-message">{{ log.message }}</div>
-          </div>
+            <!-- Nível -->
+            <ng-container matColumnDef="level">
+              <th mat-header-cell *matHeaderCellDef>Nível</th>
+              <td mat-cell *matCellDef="let log" [ngClass]="getLevelClass(log.level)">
+                {{log.level}}
+              </td>
+            </ng-container>
+
+            <!-- Mensagem -->
+            <ng-container matColumnDef="message">
+              <th mat-header-cell *matHeaderCellDef>Mensagem</th>
+              <td mat-cell *matCellDef="let log">{{log.message}}</td>
+            </ng-container>
+
+            <!-- Data -->
+            <ng-container matColumnDef="timeStamp">
+              <th mat-header-cell *matHeaderCellDef>Data</th>
+              <td mat-cell *matCellDef="let log">{{log.timeStamp | date:'dd/MM/yyyy HH:mm:ss'}}</td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="['id', 'level', 'message', 'timeStamp']"></tr>
+            <tr mat-row *matRowDef="let row; columns: ['id', 'level', 'message', 'timeStamp']"></tr>
+          </table>
         </div>
       </mat-card-content>
     </mat-card>
   </div>
 </div>
-
-<style>
-  .dashboard-container {
-    padding: 24px;
-  }
-
-  .dashboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-  }
-
-  .dashboard-header h1 {
-    font-size: 24px;
-    font-weight: 500;
-    margin: 0;
-  }
-
-  .loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 400px;
-  }
-
-  .error-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 400px;
-    text-align: center;
-  }
-
-  .error-container mat-icon {
-    font-size: 48px;
-    height: 48px;
-    width: 48px;
-    color: #f44336;
-    margin-bottom: 16px;
-  }
-
-  .dashboard-content {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-
-  @media (min-width: 768px) {
-    .dashboard-content {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  .dashboard-card {
-    height: 100%;
-  }
-
-  .card-title-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-  }
-
-  .empty-list {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 32px 0;
-    color: #757575;
-  }
-
-  .empty-list mat-icon {
-    font-size: 48px;
-    height: 48px;
-    width: 48px;
-    margin-bottom: 16px;
-    opacity: 0.5;
-  }
-
-  .client-list-item {
-    border-bottom: 1px solid #e0e0e0;
-  }
-
-  .client-item-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-  }
-
-  .client-info {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .client-name {
-    font-weight: 500;
-  }
-
-  .client-last-execution {
-    font-size: 12px;
-    color: #757575;
-  }
-
-  .client-status {
-    display: flex;
-    align-items: center;
-  }
-
-  .status-indicator {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    margin-right: 8px;
-  }
-
-  .success-status {
-    background-color: #4caf50;
-  }
-
-  .warning-status {
-    background-color: #ff9800;
-  }
-
-  .inactive-status {
-    background-color: #9e9e9e;
-  }
-
-  .audit-logs-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .audit-log-item {
-    padding: 12px;
-    border-radius: 4px;
-    background-color: #f5f5f5;
-  }
-
-  .log-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 8px;
-  }
-
-  .log-level {
-    font-weight: 500;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 12px;
-  }
-
-  .log-time {
-    font-size: 12px;
-    color: #757575;
-  }
-
-  .log-message {
-    font-size: 14px;
-    word-break: break-word;
-  }
-
-  .error-level {
-    background-color: #ffebee;
-    color: #d32f2f;
-  }
-
-  .warning-level {
-    background-color: #fff8e1;
-    color: #ff8f00;
-  }
-
-  .info-level {
-    background-color: #e3f2fd;
-    color: #1976d2;
-  }
-</style>

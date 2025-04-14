@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from '@environments/environment';
+import { environment } from '../../../environments/environment';
 import { User, CreateUserRequest, UpdateUserRequest } from '../models/user.model';
 
 @Injectable({
@@ -13,7 +13,7 @@ export class UserService {
   constructor(private http: HttpClient) {}
 
   getUsers(): Observable<User[]> {
-    return this.http.get<User[]>(this.baseUrl);
+    return this.http.get<User[]>(`${this.baseUrl}`);
   }
 
   getUser(id: string): Observable<User> {
@@ -21,7 +21,7 @@ export class UserService {
   }
 
   createUser(user: CreateUserRequest): Observable<User> {
-    return this.http.post<User>(this.baseUrl, user);
+    return this.http.post<User>(`${this.baseUrl}`, user);
   }
 
   updateUser(id: string, user: UpdateUserRequest): Observable<User> {

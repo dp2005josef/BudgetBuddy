@@ -2,9 +2,9 @@ import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
-// Material Modules
+// Material Imports
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatIconModule } from '@angular/material/icon';
@@ -28,24 +28,28 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 
-// Core & Shared
+// Application components
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { TokenInterceptor } from './core/auth/token.interceptor';
+
+// Shared components
 import { HeaderComponent } from './shared/components/header/header.component';
 import { SidebarComponent } from './shared/components/sidebar/sidebar.component';
 import { ConfirmDialogComponent } from './shared/components/confirm-dialog/confirm-dialog.component';
 
-// Features
+// Feature components
+import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { LoginComponent } from './features/auth/login/login.component';
 import { ChangePasswordComponent } from './features/auth/change-password/change-password.component';
-import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { ClientListComponent } from './features/clients/client-list/client-list.component';
-import { ClientFormComponent } from './features/clients/client-form/client-form.component';
 import { ClientDetailComponent } from './features/clients/client-detail/client-detail.component';
+import { ClientFormComponent } from './features/clients/client-form/client-form.component';
 import { UserListComponent } from './features/users/user-list/user-list.component';
 import { UserFormComponent } from './features/users/user-form/user-form.component';
 import { AuditLogsComponent } from './features/audit/audit-logs/audit-logs.component';
+
+// Interceptors
+import { TokenInterceptor } from './core/auth/token.interceptor';
 
 @NgModule({
   declarations: [
@@ -53,12 +57,12 @@ import { AuditLogsComponent } from './features/audit/audit-logs/audit-logs.compo
     HeaderComponent,
     SidebarComponent,
     ConfirmDialogComponent,
+    DashboardComponent,
     LoginComponent,
     ChangePasswordComponent,
-    DashboardComponent,
     ClientListComponent,
-    ClientFormComponent,
     ClientDetailComponent,
+    ClientFormComponent,
     UserListComponent,
     UserFormComponent,
     AuditLogsComponent
@@ -67,9 +71,10 @@ import { AuditLogsComponent } from './features/audit/audit-logs/audit-logs.compo
     BrowserModule,
     BrowserAnimationsModule,
     HttpClientModule,
+    FormsModule,
     ReactiveFormsModule,
     AppRoutingModule,
-    // Material Modules
+    // Material modules
     MatSidenavModule,
     MatToolbarModule,
     MatIconModule,
