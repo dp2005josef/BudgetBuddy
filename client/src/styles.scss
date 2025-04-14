@@ -1,0 +1,91 @@
+/* You can add global styles to this file, and also import other style files */
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
+
+html, body { height: 100%; }
+body { 
+  margin: 0; 
+  font-family: Roboto, "Helvetica Neue", sans-serif; 
+  background-color: #f5f5f5;
+}
+
+/* Custom styles for snackbar messages */
+.success-snackbar {
+  background-color: #4caf50;
+  color: white;
+}
+
+.error-snackbar {
+  background-color: #f44336;
+  color: white;
+}
+
+.warning-snackbar {
+  background-color: #ff9800;
+  color: white;
+}
+
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Helper classes */
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.mt-2 {
+  margin-top: 16px;
+}
+
+.mb-2 {
+  margin-bottom: 16px;
+}
+
+.ml-2 {
+  margin-left: 16px;
+}
+
+.mr-2 {
+  margin-right: 16px;
+}
+
+.p-2 {
+  padding: 16px;
+}
+
+/* Custom mat-table styles */
+.mat-mdc-table {
+  width: 100%;
+  background-color: white;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 1px -1px rgba(0,0,0,.2), 0 1px 1px 0 rgba(0,0,0,.14), 0 1px 3px 0 rgba(0,0,0,.12);
+}
+
+.mat-mdc-header-cell {
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.mat-mdc-row:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
