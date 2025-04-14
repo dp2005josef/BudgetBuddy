@@ -1,0 +1,347 @@
+Preciso que gere um aplicativo em Angular para o gerenciamento e agendamento de Clientes de um serviço de ETL de um datawarehouse. Este aplicativo vai ter um login e área básica de gerenciamento de usuário.
+Ideia é ter uma listagem simples de clientes(GET /api/Configuration) e poder incluir os dados e ir para a tela de gerenciamento. 
+Também tem uma parte de auditoria com logs (GET /api/Audit/recent?PageSize=1&PageIndex=2)
+Já tenho os endpoints e os modelos:
+
+
+POST /api/Auth/login
+Request
+{
+  "email": "user@example.com",
+  "password": "string"
+}
+Response
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1laWQiOiI5OWQzMDczMy05ZmFjLTRhZmEtMGIzOS0wOGRkNzkxZDk0YTMiLCJlbWFpbCI6ImFkbWluQGRhdGFwbGFjZS5jb20uYnIiLCJ1bmlxdWVfbmFtZSI6IkFkbWluaXN0cmF0b3IiLCJyb2xlIjoiQWRtaW4iLCJuYmYiOjE3NDQ2MzM5OTMsImV4cCI6MTc0NDY2Mjc5MywiaWF0IjoxNzQ0NjMzOTkzLCJpc3MiOiJkYXRhcGxhY2UtZXRsLWFwaSIsImF1ZCI6ImRhdGFwbGFjZS1ldGwtY2xpZW50cyJ9.Zy9VH3ANm7RXzMUpFyoQjo5TWSJclzKbXCssagMBrdA",
+  "expiresAt": "2025-04-14T20:33:13.7254298Z",
+  "email": "admin@dataplace.com.br",
+  "name": "Administrator"
+}
+
+Response
+
+
+
+GET /api/Configuration
+Response
+[
+  {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "clientName": "string",
+    "dataWarehouseConnectionString": "string",
+    "createdAt": "2025-04-14T13:37:22.540Z",
+    "updatedAt": "2025-04-14T13:37:22.540Z",
+    "lastExecutionTime": "2025-04-14T13:37:22.540Z",
+    "isActive": true,
+    "schedule": {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "executionTimes": [
+        "string"
+      ],
+      "daysOfWeek": [
+        0
+      ],
+      "isEnabled": true,
+      "createdAt": "2025-04-14T13:37:22.540Z",
+      "updatedAt": "2025-04-14T13:37:22.540Z"
+    },
+    "databases": [
+      {
+        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "connectionString": "string",
+        "databaseName": "string",
+        "description": "string",
+        "isMandatory": true,
+        "createdAt": "2025-04-14T13:37:22.540Z",
+        "updatedAt": "2025-04-14T13:37:22.540Z"
+      }
+    ]
+  }
+]
+
+
+POST /api/Configuration
+Request and Response
+{
+  "clientName": "string",
+  "dataWarehouseConnectionString": "string",
+  "schedule": {
+    "executionTimes": [
+      "string"
+    ],
+    "daysOfWeek": [
+      0
+    ],
+    "isEnabled": true
+  },
+  "databases": [
+    {
+      "connectionString": "string",
+      "databaseName": "string",
+      "description": "string",
+      "isMandatory": true
+    }
+  ],
+  "isActive": true
+}
+
+GET /api/Configuration/{id}
+Response 
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "clientName": "string",
+  "dataWarehouseConnectionString": "string",
+  "createdAt": "2025-04-14T13:45:32.281Z",
+  "updatedAt": "2025-04-14T13:45:32.281Z",
+  "lastExecutionTime": "2025-04-14T13:45:32.281Z",
+  "isActive": true,
+  "schedule": {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "executionTimes": [
+      "string"
+    ],
+    "daysOfWeek": [
+      0
+    ],
+    "isEnabled": true,
+    "createdAt": "2025-04-14T13:45:32.281Z",
+    "updatedAt": "2025-04-14T13:45:32.281Z"
+  },
+  "databases": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "connectionString": "string",
+      "databaseName": "string",
+      "description": "string",
+      "isMandatory": true,
+      "createdAt": "2025-04-14T13:45:32.281Z",
+      "updatedAt": "2025-04-14T13:45:32.281Z"
+    }
+  ]
+}
+
+PUT /api/Configuration/{id}
+Request  
+{
+  "clientName": "string",
+  "dataWarehouseConnectionString": "string",
+  "schedule": {
+    "executionTimes": [
+      "string"
+    ],
+    "daysOfWeek": [
+      0
+    ],
+    "isEnabled": true
+  },
+  "databases": [
+    {
+      "connectionString": "string",
+      "databaseName": "string",
+      "description": "string",
+      "isMandatory": true
+    }
+  ],
+  "isActive": true
+}
+
+Response 
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "clientName": "string",
+  "dataWarehouseConnectionString": "string",
+  "createdAt": "2025-04-14T13:45:32.281Z",
+  "updatedAt": "2025-04-14T13:45:32.281Z",
+  "lastExecutionTime": "2025-04-14T13:45:32.281Z",
+  "isActive": true,
+  "schedule": {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "executionTimes": [
+      "string"
+    ],
+    "daysOfWeek": [
+      0
+    ],
+    "isEnabled": true,
+    "createdAt": "2025-04-14T13:45:32.281Z",
+    "updatedAt": "2025-04-14T13:45:32.281Z"
+  },
+  "databases": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "connectionString": "string",
+      "databaseName": "string",
+      "description": "string",
+      "isMandatory": true,
+      "createdAt": "2025-04-14T13:45:32.281Z",
+      "updatedAt": "2025-04-14T13:45:32.281Z"
+    }
+  ]
+}
+
+DELETE /api/Configuration/{id}
+Response 200
+
+POST /api/Configuration/force-execute/{id}
+
+Response
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "clientName": "string",
+  "dataWarehouseConnectionString": "string",
+  "createdAt": "2025-04-14T13:47:14.013Z",
+  "updatedAt": "2025-04-14T13:47:14.013Z",
+  "lastExecutionTime": "2025-04-14T13:47:14.013Z",
+  "isActive": true,
+  "schedule": {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "executionTimes": [
+      "string"
+    ],
+    "daysOfWeek": [
+      0
+    ],
+    "isEnabled": true,
+    "createdAt": "2025-04-14T13:47:14.013Z",
+    "updatedAt": "2025-04-14T13:47:14.013Z"
+  },
+  "databases": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "connectionString": "string",
+      "databaseName": "string",
+      "description": "string",
+      "isMandatory": true,
+      "createdAt": "2025-04-14T13:47:14.013Z",
+      "updatedAt": "2025-04-14T13:47:14.013Z"
+    }
+  ]
+}
+
+GET /api/User
+Response
+[
+  {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "email": "string",
+    "name": "string",
+    "roles": [
+      "string"
+    ],
+    "isActive": true,
+    "createdAt": "2025-04-14T13:47:44.123Z",
+    "updatedAt": "2025-04-14T13:47:44.123Z"
+  }
+]
+
+POST /api/User
+Request 
+{
+  "email": "user@example.com",
+  "name": "string",
+  "password": "string",
+  "roles": [
+    "string"
+  ]
+}
+Response
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "email": "string",
+  "name": "string",
+  "roles": [
+    "string"
+  ],
+  "isActive": true,
+  "createdAt": "2025-04-14T13:48:05.410Z",
+  "updatedAt": "2025-04-14T13:48:05.410Z"
+}
+
+GET /api/User/{id}
+Response 
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "email": "string",
+  "name": "string",
+  "roles": [
+    "string"
+  ],
+  "isActive": true,
+  "createdAt": "2025-04-14T13:49:29.404Z",
+  "updatedAt": "2025-04-14T13:49:29.404Z"
+}
+
+PUT /api/User/{id}
+Request
+{
+  "name": "string",
+  "password": "string",
+  "roles": [
+    "string"
+  ],
+  "isActive": true
+}
+
+Response
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "email": "string",
+  "name": "string",
+  "roles": [
+    "string"
+  ],
+  "isActive": true,
+  "createdAt": "2025-04-14T13:49:54.230Z",
+  "updatedAt": "2025-04-14T13:49:54.230Z"
+}
+
+DELETE /api/User/{id}
+Request
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "email": "string",
+  "name": "string",
+  "roles": [
+    "string"
+  ],
+  "isActive": true,
+  "createdAt": "2025-04-14T13:49:54.230Z",
+  "updatedAt": "2025-04-14T13:49:54.230Z"
+}
+
+POST /api/User/change-password3
+Request
+{
+  "currentPassword": "string",
+  "newPassword": "string",
+  "confirmPassword": "string"
+}
+Response 200 or error
+
+GET /api/Audit/recent?PageSize=1&PageIndex=2
+Response
+{
+  "items": [
+    {
+      "id": 79,
+      "message": "[14/04/2025 09:21:06] DIGOS 1 - 🏁 Processo ETL para DIGOS 1 finalizado em 2 minutos e 8 segundos",
+      "messageTemplate": "[14/04/2025 09:21:06] DIGOS 1 - 🏁 Processo ETL para DIGOS 1 finalizado em 2 minutos e 8 segundos",
+      "level": "Information",
+      "timeStamp": "2025-04-14T09:21:06.077",
+      "exception": null,
+      "properties": "<properties><property key='Audit'>True</property></properties>"
+    },
+    {
+      "id": 78,
+      "message": "[14/04/2025 09:18:57] DIGOS 1 - 📊 Configurações do banco atualizadas",
+      "messageTemplate": "[14/04/2025 09:18:57] DIGOS 1 - 📊 Configurações do banco atualizadas",
+      "level": "Information",
+      "timeStamp": "2025-04-14T09:18:57.49",
+      "exception": null,
+      "properties": "<properties><property key='Audit'>True</property></properties>"
+    }
+  ],
+  "pageIndex": 1,
+  "pageSize": 100,
+  "totalItemCount": 79
+}
