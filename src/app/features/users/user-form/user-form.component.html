@@ -1,0 +1,173 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="header-left">
+      <button mat-icon-button class="back-button" routerLink="/users">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h1>{{ isEditMode ? 'Edit User' : 'New User' }}</h1>
+    </div>
+  </div>
+
+  <div *ngIf="isLoadingUser" class="loading-container">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <mat-card *ngIf="!isLoadingUser" class="user-form-card">
+    <mat-card-content>
+      <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
+        <div class="form-section">
+          <div class="row">
+            <div class="col-half">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Name</mat-label>
+                <input matInput formControlName="name" placeholder="Enter full name">
+                <mat-error *ngIf="userForm.get('name')?.hasError('required')">
+                  Name is required
+                </mat-error>
+              </mat-form-field>
+            </div>
+            
+            <div class="col-half">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Email</mat-label>
+                <input matInput type="email" formControlName="email" placeholder="Enter email address">
+                <mat-error *ngIf="userForm.get('email')?.hasError('required')">
+                  Email is required
+                </mat-error>
+                <mat-error *ngIf="userForm.get('email')?.hasError('email')">
+                  Please enter a valid email address
+                </mat-error>
+              </mat-form-field>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="col-half">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>{{ isEditMode ? 'New Password (leave blank to keep current)' : 'Password' }}</mat-label>
+                <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password">
+                <button mat-icon-button matSuffix type="button" (click)="hidePassword = !hidePassword">
+                  <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+                <mat-error *ngIf="userForm.get('password')?.hasError('required')">
+                  Password is required
+                </mat-error>
+                <mat-error *ngIf="userForm.get('password')?.hasError('minlength')">
+                  Password must be at least 6 characters
+                </mat-error>
+              </mat-form-field>
+            </div>
+            
+            <div class="col-half">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Roles</mat-label>
+                <mat-select formControlName="roles" multiple>
+                  <mat-option *ngFor="let role of availableRoles" [value]="role">
+                    {{ role }}
+                  </mat-option>
+                </mat-select>
+                <mat-error *ngIf="userForm.get('roles')?.hasError('required')">
+                  At least one role must be selected
+                </mat-error>
+              </mat-form-field>
+            </div>
+          </div>
+          
+          <div class="row" *ngIf="isEditMode">
+            <div class="col-full">
+              <mat-checkbox formControlName="isActive">Active</mat-checkbox>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button mat-button type="button" (click)="cancel()">Cancel</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="isLoading">
+            <span *ngIf="!isLoading">{{ isEditMode ? 'Update' : 'Create' }}</span>
+            <mat-spinner *ngIf="isLoading" diameter="24"></mat-spinner>
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>
+
+<style>
+  .page-container {
+    padding: 24px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+  }
+
+  .back-button {
+    margin-right: 16px;
+  }
+
+  .page-header h1 {
+    font-size: 24px;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+  }
+
+  .user-form-card {
+    padding: 24px;
+  }
+
+  .form-section {
+    margin-bottom: 24px;
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -8px 16px -8px;
+  }
+
+  .col-half {
+    flex: 0 0 calc(50% - 16px);
+    padding: 0 8px;
+    box-sizing: border-box;
+  }
+
+  .col-full {
+    flex: 0 0 calc(100% - 16px);
+    padding: 0 8px;
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 768px) {
+    .col-half {
+      flex: 0 0 calc(100% - 16px);
+    }
+  }
+
+  .full-width {
+    width: 100%;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    margin-top: 32px;
+  }
+</style>
