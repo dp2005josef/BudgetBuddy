@@ -2,77 +2,136 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ClientService } from '@core/services/client.service';
-import { Client, CreateClientRequest, UpdateClientRequest } from '@core/models/client.model';
+import { ClientService } from '../../../core/services/client.service';
+import { Client, CreateClientRequest, UpdateClientRequest } from '../../../core/models/client.model';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-client-form',
-  templateUrl: './client-form.component.html'
+  templateUrl: './client-form.component.html',
+  styleUrls: ['./client-form.component.scss']
 })
 export class ClientFormComponent implements OnInit {
   clientForm!: FormGroup;
+  clientId: string | null = null;
+  isEdit = false;
   isLoading = false;
-  isLoadingClient = false;
-  isEditMode = false;
-  clientId = '';
-  daysOfWeek = [
-    { value: 0, label: 'Sunday' },
-    { value: 1, label: 'Monday' },
-    { value: 2, label: 'Tuesday' },
-    { value: 3, label: 'Wednesday' },
-    { value: 4, label: 'Thursday' },
-    { value: 5, label: 'Friday' },
-    { value: 6, label: 'Saturday' }
+  isSaving = false;
+  error = false;
+  weekDays = [
+    { value: 0, name: 'Domingo' },
+    { value: 1, name: 'Segunda-feira' },
+    { value: 2, name: 'Terça-feira' },
+    { value: 3, name: 'Quarta-feira' },
+    { value: 4, name: 'Quinta-feira' },
+    { value: 5, name: 'Sexta-feira' },
+    { value: 6, name: 'Sábado' }
   ];
   
   constructor(
     private fb: FormBuilder,
-    private clientService: ClientService,
     private route: ActivatedRoute,
     private router: Router,
+    private clientService: ClientService,
     private snackBar: MatSnackBar
-  ) {}
-  
+  ) { }
+
   ngOnInit(): void {
-    this.initForm();
+    this.createForm();
     
-    this.route.paramMap.subscribe(params => {
-      const id = params.get('id');
-      if (id) {
-        this.clientId = id;
-        this.isEditMode = true;
-        this.loadClientData(id);
-      }
-    });
+    this.clientId = this.route.snapshot.paramMap.get('id');
+    this.isEdit = !!this.clientId;
+    
+    if (this.isEdit && this.clientId) {
+      this.loadClient(this.clientId);
+    }
   }
   
-  initForm(): void {
+  createForm(): void {
     this.clientForm = this.fb.group({
-      clientName: ['', [Validators.required]],
+      clientName: ['', [Validators.required, Validators.maxLength(100)]],
       dataWarehouseConnectionString: ['', [Validators.required]],
       isActive: [true],
       schedule: this.fb.group({
-        executionTimes: this.fb.array([this.createExecutionTimeControl()]),
+        executionTimes: this.fb.array([]),
         daysOfWeek: [[], [Validators.required]],
         isEnabled: [true]
       }),
-      databases: this.fb.array([this.createDatabaseControl()])
+      databases: this.fb.array([])
     });
+    
+    // Adiciona um horário vazio por padrão
+    this.addExecutionTime();
+    
+    // Adiciona um banco de dados vazio por padrão
+    this.addDatabase();
   }
   
-  createExecutionTimeControl(): FormGroup {
-    return this.fb.group({
-      time: ['', [Validators.required, Validators.pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)]]
-    });
+  loadClient(id: string): void {
+    this.isLoading = true;
+    this.error = false;
+    
+    this.clientService.getClient(id)
+      .pipe(
+        finalize(() => {
+          this.isLoading = false;
+        })
+      )
+      .subscribe({
+        next: (client) => {
+          this.updateForm(client);
+        },
+        error: () => {
+          this.error = true;
+          this.snackBar.open('Erro ao carregar os dados do cliente', 'Fechar', {
+            duration: 5000,
+            panelClass: 'error-snackbar'
+          });
+        }
+      });
   }
   
-  createDatabaseControl(): FormGroup {
-    return this.fb.group({
-      connectionString: ['', [Validators.required]],
-      databaseName: ['', [Validators.required]],
-      description: [''],
-      isMandatory: [false]
+  updateForm(client: Client): void {
+    // Limpa os arrays existentes
+    this.executionTimesArray.clear();
+    this.databasesArray.clear();
+    
+    // Preenche o formulário com dados do cliente
+    this.clientForm.patchValue({
+      clientName: client.clientName,
+      dataWarehouseConnectionString: client.dataWarehouseConnectionString,
+      isActive: client.isActive,
+      schedule: {
+        daysOfWeek: client.schedule.daysOfWeek,
+        isEnabled: client.schedule.isEnabled
+      }
     });
+    
+    // Adiciona os horários de execução
+    client.schedule.executionTimes.forEach(time => {
+      this.executionTimesArray.push(this.fb.control(time, [Validators.required]));
+    });
+    
+    // Adiciona os bancos de dados
+    client.databases.forEach(db => {
+      this.databasesArray.push(this.fb.group({
+        id: [db.id],
+        connectionString: [db.connectionString, [Validators.required]],
+        databaseName: [db.databaseName, [Validators.required, Validators.maxLength(100)]],
+        description: [db.description, [Validators.required]],
+        isMandatory: [db.isMandatory]
+      }));
+    });
+    
+    // Se não houver horários, adiciona um em branco
+    if (this.executionTimesArray.length === 0) {
+      this.addExecutionTime();
+    }
+    
+    // Se não houver bancos, adiciona um em branco
+    if (this.databasesArray.length === 0) {
+      this.addDatabase();
+    }
   }
   
   get executionTimesArray(): FormArray {
@@ -84,7 +143,7 @@ export class ClientFormComponent implements OnInit {
   }
   
   addExecutionTime(): void {
-    this.executionTimesArray.push(this.createExecutionTimeControl());
+    this.executionTimesArray.push(this.fb.control('', [Validators.required]));
   }
   
   removeExecutionTime(index: number): void {
@@ -94,7 +153,12 @@ export class ClientFormComponent implements OnInit {
   }
   
   addDatabase(): void {
-    this.databasesArray.push(this.createDatabaseControl());
+    this.databasesArray.push(this.fb.group({
+      connectionString: ['', [Validators.required]],
+      databaseName: ['', [Validators.required, Validators.maxLength(100)]],
+      description: ['', [Validators.required]],
+      isMandatory: [false]
+    }));
   }
   
   removeDatabase(index: number): void {
@@ -103,175 +167,113 @@ export class ClientFormComponent implements OnInit {
     }
   }
   
-  loadClientData(id: string): void {
-    this.isLoadingClient = true;
-    
-    this.clientService.getClient(id).subscribe({
-      next: (client) => {
-        this.populateForm(client);
-        this.isLoadingClient = false;
-      },
-      error: (error) => {
-        console.error('Error loading client', error);
-        this.isLoadingClient = false;
-        this.snackBar.open('Failed to load client data', 'Close', {
-          duration: 5000,
-          panelClass: ['error-snackbar']
-        });
-        this.router.navigate(['/clients']);
-      }
-    });
-  }
-  
-  populateForm(client: Client): void {
-    // Clear existing execution times and create new ones
-    while (this.executionTimesArray.length) {
-      this.executionTimesArray.removeAt(0);
-    }
-    
-    client.schedule.executionTimes.forEach(time => {
-      this.executionTimesArray.push(this.fb.group({
-        time: [time, [Validators.required, Validators.pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/)]]
-      }));
-    });
-    
-    // If no execution times, add an empty one
-    if (client.schedule.executionTimes.length === 0) {
-      this.executionTimesArray.push(this.createExecutionTimeControl());
-    }
-    
-    // Clear existing databases and create new ones
-    while (this.databasesArray.length) {
-      this.databasesArray.removeAt(0);
-    }
-    
-    client.databases.forEach(db => {
-      this.databasesArray.push(this.fb.group({
-        connectionString: [db.connectionString, [Validators.required]],
-        databaseName: [db.databaseName, [Validators.required]],
-        description: [db.description],
-        isMandatory: [db.isMandatory]
-      }));
-    });
-    
-    // If no databases, add an empty one
-    if (client.databases.length === 0) {
-      this.databasesArray.push(this.createDatabaseControl());
-    }
-    
-    // Update the form with client data
-    this.clientForm.patchValue({
-      clientName: client.clientName,
-      dataWarehouseConnectionString: client.dataWarehouseConnectionString,
-      isActive: client.isActive,
-      schedule: {
-        daysOfWeek: client.schedule.daysOfWeek,
-        isEnabled: client.schedule.isEnabled
-      }
-    });
-  }
-  
   onSubmit(): void {
     if (this.clientForm.invalid) {
-      // Mark all controls as touched to show validation errors
       this.markFormGroupTouched(this.clientForm);
-      this.snackBar.open('Please fix the validation errors before submitting', 'Close', {
-        duration: 3000,
-        panelClass: ['warning-snackbar']
+      this.snackBar.open('Por favor, corrija os erros no formulário antes de continuar', 'Fechar', {
+        duration: 5000,
+        panelClass: 'error-snackbar'
       });
       return;
     }
     
-    this.isLoading = true;
+    this.isSaving = true;
     
-    // Transform form data to match API schema
     const formValue = this.clientForm.value;
     
-    // Extract times from the execution times array
-    const executionTimes = formValue.schedule.executionTimes.map((item: { time: string }) => item.time);
-    
-    const clientData = {
-      clientName: formValue.clientName,
-      dataWarehouseConnectionString: formValue.dataWarehouseConnectionString,
-      isActive: formValue.isActive,
-      schedule: {
-        executionTimes: executionTimes,
-        daysOfWeek: formValue.schedule.daysOfWeek,
-        isEnabled: formValue.schedule.isEnabled
-      },
-      databases: formValue.databases
-    };
-    
-    if (this.isEditMode) {
-      this.updateClient(clientData);
+    if (this.isEdit && this.clientId) {
+      const updateRequest: UpdateClientRequest = {
+        clientName: formValue.clientName,
+        dataWarehouseConnectionString: formValue.dataWarehouseConnectionString,
+        isActive: formValue.isActive,
+        schedule: {
+          executionTimes: formValue.schedule.executionTimes,
+          daysOfWeek: formValue.schedule.daysOfWeek,
+          isEnabled: formValue.schedule.isEnabled
+        },
+        databases: formValue.databases
+      };
+      
+      this.clientService.updateClient(this.clientId, updateRequest)
+        .pipe(
+          finalize(() => {
+            this.isSaving = false;
+          })
+        )
+        .subscribe({
+          next: () => {
+            this.snackBar.open('Cliente atualizado com sucesso', 'Fechar', {
+              duration: 3000
+            });
+            this.router.navigate(['/clients', this.clientId]);
+          },
+          error: () => {
+            this.snackBar.open('Erro ao atualizar cliente', 'Fechar', {
+              duration: 5000,
+              panelClass: 'error-snackbar'
+            });
+          }
+        });
     } else {
-      this.createClient(clientData);
+      const createRequest: CreateClientRequest = {
+        clientName: formValue.clientName,
+        dataWarehouseConnectionString: formValue.dataWarehouseConnectionString,
+        isActive: formValue.isActive,
+        schedule: {
+          executionTimes: formValue.schedule.executionTimes,
+          daysOfWeek: formValue.schedule.daysOfWeek,
+          isEnabled: formValue.schedule.isEnabled
+        },
+        databases: formValue.databases
+      };
+      
+      this.clientService.createClient(createRequest)
+        .pipe(
+          finalize(() => {
+            this.isSaving = false;
+          })
+        )
+        .subscribe({
+          next: (client) => {
+            this.snackBar.open('Cliente criado com sucesso', 'Fechar', {
+              duration: 3000
+            });
+            this.router.navigate(['/clients', client.id]);
+          },
+          error: () => {
+            this.snackBar.open('Erro ao criar cliente', 'Fechar', {
+              duration: 5000,
+              panelClass: 'error-snackbar'
+            });
+          }
+        });
     }
   }
   
-  createClient(data: CreateClientRequest): void {
-    this.clientService.createClient(data).subscribe({
-      next: (client) => {
-        this.isLoading = false;
-        this.snackBar.open('Client created successfully', 'Close', {
-          duration: 3000,
-          panelClass: ['success-snackbar']
-        });
-        this.router.navigate(['/clients', client.id]);
-      },
-      error: (error) => {
-        this.isLoading = false;
-        console.error('Error creating client', error);
-        this.snackBar.open('Failed to create client', 'Close', {
-          duration: 5000,
-          panelClass: ['error-snackbar']
-        });
-      }
-    });
+  navigateBack(): void {
+    if (this.isEdit && this.clientId) {
+      this.router.navigate(['/clients', this.clientId]);
+    } else {
+      this.router.navigate(['/clients']);
+    }
   }
   
-  updateClient(data: UpdateClientRequest): void {
-    this.clientService.updateClient(this.clientId, data).subscribe({
-      next: (client) => {
-        this.isLoading = false;
-        this.snackBar.open('Client updated successfully', 'Close', {
-          duration: 3000,
-          panelClass: ['success-snackbar']
-        });
-        this.router.navigate(['/clients', client.id]);
-      },
-      error: (error) => {
-        this.isLoading = false;
-        console.error('Error updating client', error);
-        this.snackBar.open('Failed to update client', 'Close', {
-          duration: 5000,
-          panelClass: ['error-snackbar']
-        });
-      }
-    });
-  }
-  
-  markFormGroupTouched(formGroup: FormGroup): void {
+  // Método para marcar todos os controles de um FormGroup como touched
+  private markFormGroupTouched(formGroup: FormGroup): void {
     Object.values(formGroup.controls).forEach(control => {
       control.markAsTouched();
       
       if (control instanceof FormGroup) {
         this.markFormGroupTouched(control);
       } else if (control instanceof FormArray) {
-        for (let i = 0; i < control.length; i++) {
-          if (control.at(i) instanceof FormGroup) {
-            this.markFormGroupTouched(control.at(i) as FormGroup);
+        control.controls.forEach(arrayControl => {
+          if (arrayControl instanceof FormGroup) {
+            this.markFormGroupTouched(arrayControl);
+          } else {
+            arrayControl.markAsTouched();
           }
-        }
+        });
       }
     });
-  }
-  
-  cancel(): void {
-    if (this.isEditMode) {
-      this.router.navigate(['/clients', this.clientId]);
-    } else {
-      this.router.navigate(['/clients']);
-    }
   }
 }

@@ -1,64 +1,67 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { AuthService } from '@core/auth/auth.service';
+import { Router, ActivatedRoute } from '@angular/router';
+import { AuthService } from '../../../core/auth/auth.service';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-login',
-  templateUrl: './login.component.html'
+  templateUrl: './login.component.html',
+  styleUrls: ['./login.component.scss']
 })
 export class LoginComponent implements OnInit {
-  loginForm!: FormGroup;
+  loginForm: FormGroup;
   isLoading = false;
-  hidePassword = true;
-  returnUrl: string = '/';
-  
+  returnUrl: string = '/dashboard';
+  loginError: string = '';
+
   constructor(
-    private fb: FormBuilder,
-    private authService: AuthService,
-    private router: Router,
+    private formBuilder: FormBuilder,
     private route: ActivatedRoute,
-    private snackBar: MatSnackBar
-  ) {}
-  
-  ngOnInit(): void {
-    this.loginForm = this.fb.group({
+    private router: Router,
+    private authService: AuthService
+  ) {
+    this.loginForm = this.formBuilder.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required]]
-    });
-    
-    // Get return url from route parameters or default to '/'
-    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/';
-    
-    // If already logged in, redirect to return URL
-    this.authService.isAuthenticated$.subscribe(isAuthenticated => {
-      if (isAuthenticated) {
-        this.router.navigateByUrl(this.returnUrl);
-      }
+      password: ['', Validators.required]
     });
   }
-  
+
+  ngOnInit(): void {
+    // Redirecionar para o dashboard se o usuário já estiver autenticado
+    this.authService.isAuthenticated$.subscribe(isAuthenticated => {
+      if (isAuthenticated) {
+        this.router.navigate(['/dashboard']);
+      }
+    });
+
+    // Obter URL de retorno dos parâmetros da rota ou usar valor padrão
+    this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+  }
+
   onSubmit(): void {
     if (this.loginForm.invalid) {
       return;
     }
-    
+
     this.isLoading = true;
+    this.loginError = '';
+
     const { email, password } = this.loginForm.value;
-    
-    this.authService.login(email, password).subscribe({
-      next: () => {
-        this.isLoading = false;
-        this.router.navigateByUrl(this.returnUrl);
-      },
-      error: (error) => {
-        this.isLoading = false;
-        this.snackBar.open(error.message || 'Login failed', 'Close', {
-          duration: 5000,
-          panelClass: ['error-snackbar']
-        });
-      }
-    });
+
+    this.authService.login(email, password)
+      .pipe(
+        finalize(() => {
+          this.isLoading = false;
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.router.navigate([this.returnUrl]);
+        },
+        error: (error) => {
+          this.loginError = error.message || 'Falha na autenticação';
+        }
+      });
   }
 }

@@ -55,6 +55,7 @@ export interface UpdateClientRequest {
     isEnabled: boolean;
   };
   databases: {
+    id?: string;
     connectionString: string;
     databaseName: string;
     description: string;

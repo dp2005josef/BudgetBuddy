@@ -1,242 +1,96 @@
-<div class="page-container">
+<div class="clients-container">
+  <!-- Cabeçalho da página -->
   <div class="page-header">
-    <h1>ETL Clients</h1>
-    <button mat-raised-button color="primary" routerLink="/clients/new">
-      <mat-icon>add</mat-icon>
-      New Client
-    </button>
+    <h1 class="page-title">Clientes</h1>
+    <div class="actions">
+      <button mat-flat-button color="primary" (click)="navigateToNew()">
+        <mat-icon>add</mat-icon>
+        Novo Cliente
+      </button>
+      <button mat-icon-button (click)="refresh()" matTooltip="Atualizar">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
   </div>
 
-  <mat-card class="clients-card">
-    <mat-card-content>
-      <div class="filter-container">
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Filter</mat-label>
-          <input matInput (keyup)="applyFilter($event)" placeholder="Search clients...">
-          <mat-icon matPrefix>search</mat-icon>
-        </mat-form-field>
-      </div>
+  <!-- Área de carregamento/erro -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-progress-spinner mode="indeterminate" diameter="40"></mat-progress-spinner>
+    <p>Carregando clientes...</p>
+  </div>
 
-      <div *ngIf="isLoading" class="loading-container">
-        <mat-spinner></mat-spinner>
-      </div>
+  <div *ngIf="error && !isLoading" class="error-container">
+    <mat-icon color="warn">error</mat-icon>
+    <p>Ocorreu um erro ao carregar os clientes. Tente novamente mais tarde.</p>
+    <button mat-flat-button color="primary" (click)="loadClients()">Tentar novamente</button>
+  </div>
 
-      <div *ngIf="error" class="error-container">
-        <mat-icon>error_outline</mat-icon>
-        <p>Failed to load clients</p>
-        <button mat-raised-button color="primary" (click)="loadClients()">Retry</button>
-      </div>
+  <!-- Tabela de clientes -->
+  <div *ngIf="!isLoading && !error" class="table-container mat-elevation-z3">
+    <table mat-table [dataSource]="clients" class="clients-table">
+      <!-- Nome do Cliente -->
+      <ng-container matColumnDef="clientName">
+        <th mat-header-cell *matHeaderCellDef>Nome do Cliente</th>
+        <td mat-cell *matCellDef="let client">
+          <div class="client-name">{{client.clientName}}</div>
+          <div class="client-connection">{{client.dataWarehouseConnectionString | slice:0:40}}{{client.dataWarehouseConnectionString.length > 40 ? '...' : ''}}</div>
+        </td>
+      </ng-container>
 
-      <div *ngIf="!isLoading && !error" class="table-container">
-        <div *ngIf="dataSource.data.length === 0" class="empty-list">
-          <mat-icon>business</mat-icon>
-          <p>No clients found</p>
-          <button mat-raised-button color="primary" routerLink="/clients/new">Add Client</button>
-        </div>
+      <!-- Última Execução -->
+      <ng-container matColumnDef="lastExecutionTime">
+        <th mat-header-cell *matHeaderCellDef>Última Execução</th>
+        <td mat-cell *matCellDef="let client">
+          <span *ngIf="client.lastExecutionTime">{{client.lastExecutionTime | date:'dd/MM/yyyy HH:mm'}}</span>
+          <span *ngIf="!client.lastExecutionTime" class="text-muted">Nunca executado</span>
+        </td>
+      </ng-container>
 
-        <table mat-table [dataSource]="dataSource" matSort *ngIf="dataSource.data.length > 0" class="clients-table">
-          <!-- Client Name Column -->
-          <ng-container matColumnDef="clientName">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Client</th>
-            <td mat-cell *matCellDef="let client">{{ client.clientName }}</td>
-          </ng-container>
+      <!-- Status -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let client">
+          <div class="status-indicator" [ngClass]="getClientStatusClass(client)">
+            <span *ngIf="client.isActive && client.lastExecutionTime">Ativo</span>
+            <span *ngIf="client.isActive && !client.lastExecutionTime">Pendente</span>
+            <span *ngIf="!client.isActive">Inativo</span>
+          </div>
+        </td>
+      </ng-container>
 
-          <!-- Status Column -->
-          <ng-container matColumnDef="isActive">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
-            <td mat-cell *matCellDef="let client">
-              <span class="status-badge" [ngClass]="client.isActive ? 'active-badge' : 'inactive-badge'">
-                {{ client.isActive ? 'Active' : 'Inactive' }}
-              </span>
-            </td>
-          </ng-container>
+      <!-- Ações -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Ações</th>
+        <td mat-cell *matCellDef="let client">
+          <button mat-icon-button color="primary" matTooltip="Executar Agora" 
+                  (click)="executeClient($event, client.id)" 
+                  [disabled]="!client.isActive">
+            <mat-icon>play_arrow</mat-icon>
+          </button>
+          <button mat-icon-button color="primary" matTooltip="Editar" 
+                  (click)="navigateToEdit($event, client.id)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" matTooltip="Excluir" 
+                  (click)="deleteClient($event, client)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
 
-          <!-- Last Execution Column -->
-          <ng-container matColumnDef="lastExecutionTime">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Last Execution</th>
-            <td mat-cell *matCellDef="let client">
-              <div *ngIf="client.lastExecutionTime; else neverExecuted">
-                <div class="last-execution">
-                  {{ client.lastExecutionTime | date:'medium' }}
-                </div>
-                <div class="execution-status">
-                  <span class="status-dot" [style.background-color]="getLastExecutionStatus(client).color"></span>
-                  {{ getLastExecutionStatus(client).status }}
-                </div>
-              </div>
-              <ng-template #neverExecuted>
-                <span class="never-executed">Never executed</span>
-              </ng-template>
-            </td>
-          </ng-container>
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+          (click)="navigateToDetail(row.id)" 
+          class="client-row"></tr>
+    </table>
 
-          <!-- Created Date Column -->
-          <ng-container matColumnDef="createdAt">
-            <th mat-header-cell *matHeaderCellDef mat-sort-header>Created</th>
-            <td mat-cell *matCellDef="let client">{{ client.createdAt | date }}</td>
-          </ng-container>
-
-          <!-- Actions Column -->
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
-            <td mat-cell *matCellDef="let client">
-              <button mat-icon-button [matMenuTriggerFor]="menu" (click)="$event.stopPropagation()">
-                <mat-icon>more_vert</mat-icon>
-              </button>
-              <mat-menu #menu="matMenu">
-                <button mat-menu-item (click)="navigateToEdit(client.id, $event)">
-                  <mat-icon>edit</mat-icon>
-                  <span>Edit</span>
-                </button>
-                <button mat-menu-item (click)="forceExecute(client, $event)">
-                  <mat-icon>play_arrow</mat-icon>
-                  <span>Force Execute ETL</span>
-                </button>
-                <button mat-menu-item (click)="confirmDelete(client, $event)">
-                  <mat-icon>delete</mat-icon>
-                  <span>Delete</span>
-                </button>
-              </mat-menu>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;" (click)="navigateToDetail(row.id)" class="client-row"></tr>
-        </table>
-
-        <mat-paginator [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons *ngIf="dataSource.data.length > 0"></mat-paginator>
-      </div>
-    </mat-card-content>
-  </mat-card>
+    <!-- Mensagem para quando não há clientes -->
+    <div *ngIf="clients.length === 0" class="empty-state">
+      <mat-icon>business</mat-icon>
+      <p>Nenhum cliente cadastrado ainda.</p>
+      <button mat-flat-button color="primary" (click)="navigateToNew()">
+        Cadastrar Primeiro Cliente
+      </button>
+    </div>
+  </div>
 </div>
-
-<style>
-  .page-container {
-    padding: 24px;
-  }
-
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-  }
-
-  .page-header h1 {
-    font-size: 24px;
-    font-weight: 500;
-    margin: 0;
-  }
-
-  .clients-card {
-    padding: 16px;
-  }
-
-  .filter-container {
-    margin-bottom: 16px;
-  }
-
-  .filter-field {
-    width: 100%;
-    max-width: 400px;
-  }
-
-  .loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 300px;
-  }
-
-  .error-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 300px;
-    text-align: center;
-  }
-
-  .error-container mat-icon {
-    font-size: 48px;
-    height: 48px;
-    width: 48px;
-    color: #f44336;
-    margin-bottom: 16px;
-  }
-
-  .empty-list {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 64px 0;
-    color: #757575;
-  }
-
-  .empty-list mat-icon {
-    font-size: 48px;
-    height: 48px;
-    width: 48px;
-    margin-bottom: 16px;
-    opacity: 0.5;
-  }
-
-  .table-container {
-    overflow-x: auto;
-  }
-
-  .clients-table {
-    width: 100%;
-  }
-
-  .client-row {
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .client-row:hover {
-    background-color: rgba(0, 0, 0, 0.04);
-  }
-
-  .status-badge {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 500;
-  }
-
-  .active-badge {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-  }
-
-  .inactive-badge {
-    background-color: #eeeeee;
-    color: #757575;
-  }
-
-  .last-execution {
-    font-size: 14px;
-  }
-
-  .execution-status {
-    display: flex;
-    align-items: center;
-    font-size: 12px;
-    color: #757575;
-  }
-
-  .status-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin-right: 4px;
-  }
-
-  .never-executed {
-    color: #757575;
-    font-style: italic;
-  }
-</style>

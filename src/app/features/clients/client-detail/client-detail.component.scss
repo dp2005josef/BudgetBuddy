@@ -1,0 +1,233 @@
+.client-detail-container {
+  padding: 16px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  
+  .title-section {
+    display: flex;
+    align-items: center;
+    
+    button {
+      margin-right: 8px;
+    }
+  }
+  
+  .page-title {
+    font-size: 24px;
+    font-weight: 500;
+    margin: 0;
+  }
+  
+  .actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    
+    @media (max-width: 768px) {
+      margin-top: 16px;
+      width: 100%;
+      justify-content: flex-end;
+    }
+  }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+  
+  p {
+    margin-top: 16px;
+    color: rgba(0, 0, 0, 0.6);
+  }
+}
+
+.error-container {
+  text-align: center;
+  padding: 48px 0;
+  
+  mat-icon {
+    font-size: 48px;
+    height: 48px;
+    width: 48px;
+    margin-bottom: 16px;
+  }
+  
+  p {
+    margin-bottom: 16px;
+    color: rgba(0, 0, 0, 0.6);
+  }
+}
+
+.client-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  
+  .status-card, .info-card, .schedule-card, .databases-card {
+    grid-column: 1 / -1;
+  }
+  
+  @media (min-width: 992px) {
+    .status-card {
+      grid-column: 1 / 2;
+    }
+    
+    .info-card {
+      grid-column: 2 / -1;
+    }
+  }
+}
+
+.status-card {
+  background-color: white;
+  border-radius: 4px;
+  padding: 16px;
+  
+  .status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    
+    .status-label {
+      font-size: 18px;
+      font-weight: 500;
+    }
+  }
+  
+  .status-details {
+    .status-item {
+      margin-bottom: 12px;
+      
+      .status-item-label {
+        display: block;
+        font-size: 14px;
+        color: rgba(0, 0, 0, 0.6);
+        margin-bottom: 4px;
+      }
+      
+      .status-item-value {
+        font-size: 16px;
+      }
+    }
+  }
+}
+
+.status-indicator {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+  text-align: center;
+}
+
+.status-success {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4caf50;
+}
+
+.status-warning {
+  background-color: rgba(255, 152, 0, 0.1);
+  color: #ff9800;
+}
+
+.status-inactive {
+  background-color: rgba(158, 158, 158, 0.1);
+  color: #9e9e9e;
+}
+
+.status-pending {
+  background-color: rgba(33, 150, 243, 0.1);
+  color: #2196f3;
+}
+
+.text-muted {
+  color: rgba(0, 0, 0, 0.6);
+  font-style: italic;
+}
+
+mat-card {
+  margin-bottom: 16px;
+}
+
+.info-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+  
+  .info-label {
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.6);
+    margin-bottom: 4px;
+  }
+  
+  .info-value {
+    font-size: 16px;
+    word-break: break-word;
+  }
+}
+
+.schedule-status {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  
+  .schedule-status-label {
+    margin-right: 8px;
+    font-weight: 500;
+  }
+}
+
+.schedule-days, .schedule-times {
+  margin-bottom: 20px;
+  
+  h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 12px;
+  }
+}
+
+.days-of-week, .time-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.databases-table {
+  width: 100%;
+  
+  .connection-string {
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.empty-database-message {
+  text-align: center;
+  padding: 24px 0;
+  
+  mat-icon {
+    font-size: 48px;
+    height: 48px;
+    width: 48px;
+    margin-bottom: 16px;
+    color: rgba(0, 0, 0, 0.3);
+  }
+  
+  p {
+    color: rgba(0, 0, 0, 0.6);
+  }
+}

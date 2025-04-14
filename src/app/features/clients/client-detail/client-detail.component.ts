@@ -1,91 +1,85 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ClientService } from '@core/services/client.service';
-import { Client } from '@core/models/client.model';
-import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
+import { MatDialog } from '@angular/material/dialog';
+import { ClientService } from '../../../core/services/client.service';
+import { Client } from '../../../core/models/client.model';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-client-detail',
-  templateUrl: './client-detail.component.html'
+  templateUrl: './client-detail.component.html',
+  styleUrls: ['./client-detail.component.scss']
 })
 export class ClientDetailComponent implements OnInit {
+  clientId!: string;
   client: Client | null = null;
   isLoading = true;
   error = false;
-  isExecuting = false;
-  
-  daysOfWeek = [
-    'Sunday',
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday'
-  ];
   
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private clientService: ClientService,
-    private dialog: MatDialog,
-    private snackBar: MatSnackBar
-  ) {}
-  
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
+  ) { }
+
   ngOnInit(): void {
-    this.route.paramMap.subscribe(params => {
-      const id = params.get('id');
-      if (id) {
-        this.loadClient(id);
-      }
-    });
+    this.clientId = this.route.snapshot.paramMap.get('id') || '';
+    if (!this.clientId) {
+      this.router.navigate(['/clients']);
+      return;
+    }
+    
+    this.loadClient();
   }
   
-  loadClient(id: string): void {
+  loadClient(): void {
     this.isLoading = true;
     this.error = false;
     
-    this.clientService.getClient(id).subscribe({
-      next: (client) => {
-        this.client = client;
-        this.isLoading = false;
-      },
-      error: (error) => {
-        console.error('Error loading client', error);
-        this.isLoading = false;
-        this.error = true;
-        this.snackBar.open('Failed to load client details', 'Close', {
-          duration: 5000,
-          panelClass: ['error-snackbar']
+    this.clientService.getClient(this.clientId)
+      .pipe(
+        finalize(() => {
+          this.isLoading = false;
+        })
+      )
+      .subscribe({
+        next: (client) => {
+          this.client = client;
+        },
+        error: () => {
+          this.error = true;
+          this.snackBar.open('Erro ao carregar os dados do cliente', 'Fechar', {
+            duration: 5000,
+            panelClass: 'error-snackbar'
+          });
+        }
+      });
+  }
+  
+  navigateToEdit(): void {
+    this.router.navigate(['/clients', this.clientId, 'edit']);
+  }
+  
+  navigateBack(): void {
+    this.router.navigate(['/clients']);
+  }
+  
+  executeClient(): void {
+    this.clientService.forceExecute(this.clientId).subscribe({
+      next: (updatedClient) => {
+        this.client = updatedClient;
+        this.snackBar.open('Execução do cliente iniciada com sucesso', 'Fechar', {
+          duration: 3000
         });
-      }
-    });
-  }
-  
-  editClient(): void {
-    if (this.client) {
-      this.router.navigate(['/clients', this.client.id, 'edit']);
-    }
-  }
-  
-  confirmDelete(): void {
-    if (!this.client) return;
-    
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
-      data: {
-        title: 'Delete Client',
-        message: `Are you sure you want to delete ${this.client.clientName}? This action cannot be undone.`,
-        confirmButtonText: 'Delete',
-        dangerAction: true
-      }
-    });
-    
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.deleteClient();
+      },
+      error: () => {
+        this.snackBar.open('Erro ao iniciar execução do cliente', 'Fechar', {
+          duration: 5000,
+          panelClass: 'error-snackbar'
+        });
       }
     });
   }
@@ -93,95 +87,65 @@ export class ClientDetailComponent implements OnInit {
   deleteClient(): void {
     if (!this.client) return;
     
-    this.clientService.deleteClient(this.client.id).subscribe({
-      next: () => {
-        this.snackBar.open('Client deleted successfully', 'Close', {
-          duration: 3000,
-          panelClass: ['success-snackbar']
-        });
-        this.router.navigate(['/clients']);
-      },
-      error: (error) => {
-        console.error('Error deleting client', error);
-        this.snackBar.open('Failed to delete client', 'Close', {
-          duration: 5000,
-          panelClass: ['error-snackbar']
-        });
-      }
-    });
+    if (confirm(`Tem certeza que deseja excluir o cliente "${this.client.clientName}"?`)) {
+      this.clientService.deleteClient(this.clientId).subscribe({
+        next: () => {
+          this.snackBar.open('Cliente excluído com sucesso', 'Fechar', {
+            duration: 3000
+          });
+          this.router.navigate(['/clients']);
+        },
+        error: () => {
+          this.snackBar.open('Erro ao excluir cliente', 'Fechar', {
+            duration: 5000,
+            panelClass: 'error-snackbar'
+          });
+        }
+      });
+    }
   }
   
-  confirmExecute(): void {
-    if (!this.client) return;
-    
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
-      data: {
-        title: 'Force Execute ETL',
-        message: `Are you sure you want to force execute ETL for ${this.client.clientName}?`,
-        confirmButtonText: 'Execute',
-        cancelButtonText: 'Cancel'
-      }
-    });
-    
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.executeETL();
-      }
-    });
-  }
-  
-  executeETL(): void {
-    if (!this.client) return;
-    
-    this.isExecuting = true;
-    
-    this.clientService.forceExecute(this.client.id).subscribe({
-      next: (updatedClient) => {
-        this.client = updatedClient;
-        this.isExecuting = false;
-        this.snackBar.open('ETL execution triggered successfully', 'Close', {
-          duration: 3000,
-          panelClass: ['success-snackbar']
-        });
-      },
-      error: (error) => {
-        console.error('Error executing ETL', error);
-        this.isExecuting = false;
-        this.snackBar.open('Failed to execute ETL', 'Close', {
-          duration: 5000,
-          panelClass: ['error-snackbar']
-        });
-      }
-    });
-  }
-  
-  formatDaysOfWeek(days: number[]): string {
-    if (!days || days.length === 0) return 'None';
-    
-    if (days.length === 7) return 'Every day';
-    
-    return days
-      .sort((a, b) => a - b)
-      .map(day => this.daysOfWeek[day])
-      .join(', ');
-  }
-  
-  getLastExecutionClass(): string {
-    if (!this.client?.lastExecutionTime) {
-      return 'no-execution';
+  getClientStatusClass(client: Client): string {
+    if (!client.isActive) {
+      return 'status-inactive';
     }
     
-    const lastExecution = new Date(this.client.lastExecutionTime);
+    if (!client.lastExecutionTime) {
+      return 'status-pending';
+    }
+    
+    const lastExecution = new Date(client.lastExecutionTime);
     const now = new Date();
-    const diffHours = (now.getTime() - lastExecution.getTime()) / (1000 * 60 * 60);
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     
-    if (diffHours < 24) {
-      return 'recent-execution';
-    } else if (diffHours < 72) {
-      return 'old-execution';
-    } else {
-      return 'very-old-execution';
+    if (lastExecution >= oneDayAgo) {
+      return 'status-success';
     }
+    
+    return 'status-warning';
+  }
+  
+  getStatusText(client: Client): string {
+    if (!client.isActive) {
+      return 'Inativo';
+    }
+    
+    if (!client.lastExecutionTime) {
+      return 'Pendente';
+    }
+    
+    const lastExecution = new Date(client.lastExecutionTime);
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    
+    if (lastExecution >= oneDayAgo) {
+      return 'Ativo';
+    }
+    
+    return 'Atenção';
+  }
+  
+  refresh(): void {
+    this.loadClient();
   }
 }

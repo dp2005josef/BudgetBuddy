@@ -1,182 +1,132 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { MatTableDataSource } from '@angular/material/table';
-import { MatSort } from '@angular/material/sort';
-import { MatPaginator } from '@angular/material/paginator';
-import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { ClientService } from '@core/services/client.service';
-import { Client } from '@core/models/client.model';
-import { ConfirmDialogComponent } from '@shared/components/confirm-dialog/confirm-dialog.component';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
+import { ClientService } from '../../../core/services/client.service';
+import { Client } from '../../../core/models/client.model';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-client-list',
-  templateUrl: './client-list.component.html'
+  templateUrl: './client-list.component.html',
+  styleUrls: ['./client-list.component.scss']
 })
 export class ClientListComponent implements OnInit {
-  displayedColumns: string[] = ['clientName', 'isActive', 'lastExecutionTime', 'createdAt', 'actions'];
-  dataSource = new MatTableDataSource<Client>([]);
+  clients: Client[] = [];
   isLoading = true;
   error = false;
-
-  @ViewChild(MatSort) sort!: MatSort;
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-
+  displayedColumns: string[] = ['clientName', 'lastExecutionTime', 'status', 'actions'];
+  
   constructor(
     private clientService: ClientService,
-    private dialog: MatDialog,
+    private router: Router,
     private snackBar: MatSnackBar,
-    private router: Router
-  ) {}
+    private dialog: MatDialog
+  ) { }
 
   ngOnInit(): void {
     this.loadClients();
   }
-
+  
   loadClients(): void {
     this.isLoading = true;
     this.error = false;
-
-    this.clientService.getClients().subscribe({
-      next: (clients) => {
-        this.dataSource.data = clients;
-        this.isLoading = false;
+    
+    this.clientService.getClients()
+      .pipe(
+        finalize(() => {
+          this.isLoading = false;
+        })
+      )
+      .subscribe({
+        next: (clients) => {
+          this.clients = clients;
+        },
+        error: () => {
+          this.error = true;
+          this.snackBar.open('Erro ao carregar lista de clientes', 'Fechar', {
+            duration: 5000,
+            panelClass: 'error-snackbar'
+          });
+        }
+      });
+  }
+  
+  navigateToDetail(clientId: string): void {
+    this.router.navigate(['/clients', clientId]);
+  }
+  
+  navigateToEdit(event: Event, clientId: string): void {
+    event.stopPropagation();
+    this.router.navigate(['/clients', clientId, 'edit']);
+  }
+  
+  navigateToNew(): void {
+    this.router.navigate(['/clients/new']);
+  }
+  
+  executeClient(event: Event, clientId: string): void {
+    event.stopPropagation();
+    
+    this.clientService.forceExecute(clientId).subscribe({
+      next: () => {
+        this.snackBar.open('Execução do cliente iniciada com sucesso', 'Fechar', {
+          duration: 3000
+        });
+        // Recarregar clientes após um breve delay para atualizar as informações
+        setTimeout(() => this.loadClients(), 1000);
       },
-      error: (error) => {
-        console.error('Error loading clients', error);
-        this.isLoading = false;
-        this.error = true;
-        this.snackBar.open('Failed to load clients', 'Close', {
+      error: () => {
+        this.snackBar.open('Erro ao iniciar execução do cliente', 'Fechar', {
           duration: 5000,
-          panelClass: ['error-snackbar']
+          panelClass: 'error-snackbar'
         });
       }
     });
   }
-
-  ngAfterViewInit(): void {
-    this.dataSource.sort = this.sort;
-    this.dataSource.paginator = this.paginator;
-  }
-
-  applyFilter(event: Event): void {
-    const filterValue = (event.target as HTMLInputElement).value;
-    this.dataSource.filter = filterValue.trim().toLowerCase();
-
-    if (this.dataSource.paginator) {
-      this.dataSource.paginator.firstPage();
+  
+  deleteClient(event: Event, client: Client): void {
+    event.stopPropagation();
+    
+    if (confirm(`Tem certeza que deseja excluir o cliente "${client.clientName}"?`)) {
+      this.clientService.deleteClient(client.id).subscribe({
+        next: () => {
+          this.snackBar.open('Cliente excluído com sucesso', 'Fechar', {
+            duration: 3000
+          });
+          this.loadClients();
+        },
+        error: () => {
+          this.snackBar.open('Erro ao excluir cliente', 'Fechar', {
+            duration: 5000,
+            panelClass: 'error-snackbar'
+          });
+        }
+      });
     }
   }
-
-  navigateToDetail(id: string): void {
-    this.router.navigate(['/clients', id]);
-  }
-
-  navigateToEdit(id: string, event: Event): void {
-    event.stopPropagation();
-    this.router.navigate(['/clients', id, 'edit']);
-  }
-
-  confirmDelete(client: Client, event: Event): void {
-    event.stopPropagation();
+  
+  getClientStatusClass(client: Client): string {
+    if (!client.isActive) {
+      return 'status-inactive';
+    }
     
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
-      data: {
-        title: 'Delete Client',
-        message: `Are you sure you want to delete ${client.clientName}? This action cannot be undone.`,
-        confirmButtonText: 'Delete',
-        dangerAction: true
-      }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.deleteClient(client.id);
-      }
-    });
-  }
-
-  deleteClient(id: string): void {
-    this.clientService.deleteClient(id).subscribe({
-      next: () => {
-        this.snackBar.open('Client deleted successfully', 'Close', {
-          duration: 3000,
-          panelClass: ['success-snackbar']
-        });
-        this.loadClients();
-      },
-      error: (error) => {
-        console.error('Error deleting client', error);
-        this.snackBar.open('Failed to delete client', 'Close', {
-          duration: 5000,
-          panelClass: ['error-snackbar']
-        });
-      }
-    });
-  }
-
-  forceExecute(client: Client, event: Event): void {
-    event.stopPropagation();
-    
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
-      data: {
-        title: 'Force Execute ETL',
-        message: `Are you sure you want to force execute ETL for ${client.clientName}?`,
-        confirmButtonText: 'Execute',
-        cancelButtonText: 'Cancel'
-      }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.executeETL(client.id);
-      }
-    });
-  }
-
-  executeETL(id: string): void {
-    this.clientService.forceExecute(id).subscribe({
-      next: (response) => {
-        this.snackBar.open('ETL execution triggered successfully', 'Close', {
-          duration: 3000,
-          panelClass: ['success-snackbar']
-        });
-        
-        // Update the client in the data source
-        const index = this.dataSource.data.findIndex(c => c.id === id);
-        if (index !== -1) {
-          const updatedData = [...this.dataSource.data];
-          updatedData[index] = response;
-          this.dataSource.data = updatedData;
-        }
-      },
-      error: (error) => {
-        console.error('Error executing ETL', error);
-        this.snackBar.open('Failed to execute ETL', 'Close', {
-          duration: 5000,
-          panelClass: ['error-snackbar']
-        });
-      }
-    });
-  }
-
-  getLastExecutionStatus(client: Client): { status: string, color: string } {
     if (!client.lastExecutionTime) {
-      return { status: 'Never executed', color: '#757575' };
+      return 'status-pending';
     }
     
     const lastExecution = new Date(client.lastExecutionTime);
     const now = new Date();
-    const diffHours = (now.getTime() - lastExecution.getTime()) / (1000 * 60 * 60);
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     
-    if (diffHours < 24) {
-      return { status: 'Recent', color: '#4caf50' };
-    } else if (diffHours < 48) {
-      return { status: 'Yesterday', color: '#ff9800' };
-    } else {
-      return { status: 'Outdated', color: '#f44336' };
+    if (lastExecution >= oneDayAgo) {
+      return 'status-success';
     }
+    
+    return 'status-warning';
+  }
+  
+  refresh(): void {
+    this.loadClients();
   }
 }
