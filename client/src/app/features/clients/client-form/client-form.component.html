@@ -1,0 +1,210 @@
+<div class="container">
+  <div class="form-header">
+    <div class="back-button">
+      <button mat-icon-button (click)="confirmCancel()" matTooltip="Voltar">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h1>{{isEditing ? 'Editar' : 'Novo'}} Cliente</h1>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <form [formGroup]="clientForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading">
+    <div class="form-content">
+      <!-- Informações Básicas -->
+      <mat-card appearance="outlined" class="form-card">
+        <mat-card-header>
+          <mat-card-title>Informações Básicas</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="form-fields">
+            <mat-form-field appearance="outline">
+              <mat-label>Nome do Cliente</mat-label>
+              <input matInput formControlName="clientName" required>
+              <mat-error *ngIf="clientForm.get('clientName')?.hasError('required')">
+                Nome do cliente é obrigatório
+              </mat-error>
+              <mat-error *ngIf="clientForm.get('clientName')?.hasError('maxlength')">
+                Nome do cliente deve ter no máximo 100 caracteres
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>String de Conexão do Data Warehouse</mat-label>
+              <textarea 
+                matInput 
+                formControlName="dataWarehouseConnectionString" 
+                required 
+                rows="3">
+              </textarea>
+              <mat-error *ngIf="clientForm.get('dataWarehouseConnectionString')?.hasError('required')">
+                String de conexão é obrigatória
+              </mat-error>
+            </mat-form-field>
+
+            <mat-slide-toggle formControlName="isActive" color="primary">
+              Cliente Ativo
+            </mat-slide-toggle>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Programação -->
+      <mat-card appearance="outlined" class="form-card">
+        <mat-card-header>
+          <mat-card-title>Programação</mat-card-title>
+          <mat-slide-toggle 
+            formControlName="schedule.isEnabled" 
+            color="primary">
+            {{clientForm.get('schedule.isEnabled')?.value ? 'Ativo' : 'Inativo'}}
+          </mat-slide-toggle>
+        </mat-card-header>
+        <mat-card-content formGroupName="schedule">
+          <div class="form-fields">
+            <div class="weekday-selector">
+              <mat-label class="input-label">Dias da Semana</mat-label>
+              <mat-error *ngIf="clientForm.get('schedule.daysOfWeek')?.hasError('required') && clientForm.get('schedule.daysOfWeek')?.touched">
+                Selecione pelo menos um dia da semana
+              </mat-error>
+              <mat-selection-list formControlName="daysOfWeek" [required]="true">
+                <mat-list-option *ngFor="let day of daysOfWeek" [value]="day.value">
+                  {{day.label}}
+                </mat-list-option>
+              </mat-selection-list>
+            </div>
+
+            <div class="execution-times">
+              <div class="execution-times-header">
+                <mat-label class="input-label">Horários de Execução</mat-label>
+                <button 
+                  mat-mini-fab 
+                  color="primary" 
+                  type="button" 
+                  (click)="addExecutionTime()"
+                  matTooltip="Adicionar horário">
+                  <mat-icon>add</mat-icon>
+                </button>
+              </div>
+
+              <div formArrayName="executionTimes">
+                <div *ngFor="let time of executionTimes.controls; let i = index" class="time-input-group">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Horário (HH:MM)</mat-label>
+                    <input matInput [formControlName]="i" placeholder="13:00" required>
+                    <mat-error *ngIf="executionTimes.at(i).hasError('required')">
+                      Horário é obrigatório
+                    </mat-error>
+                    <mat-error *ngIf="executionTimes.at(i).hasError('pattern')">
+                      Formato inválido. Use o formato HH:MM (ex: 13:00)
+                    </mat-error>
+                  </mat-form-field>
+                  <button 
+                    mat-icon-button 
+                    color="warn" 
+                    type="button" 
+                    (click)="removeExecutionTime(i)"
+                    matTooltip="Remover horário">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+                
+                <div *ngIf="executionTimes.length === 0" class="empty-times">
+                  <p>Nenhum horário configurado. Adicione pelo menos um horário.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Bancos de Dados -->
+      <mat-card appearance="outlined" class="form-card">
+        <mat-card-header>
+          <mat-card-title>Bancos de Dados</mat-card-title>
+          <button 
+            mat-mini-fab 
+            color="primary" 
+            type="button" 
+            (click)="addDatabase()"
+            matTooltip="Adicionar banco de dados">
+            <mat-icon>add</mat-icon>
+          </button>
+        </mat-card-header>
+        <mat-card-content>
+          <div formArrayName="databases">
+            <mat-accordion>
+              <mat-expansion-panel *ngFor="let db of databases.controls; let i = index" [expanded]="i === 0">
+                <mat-expansion-panel-header>
+                  <mat-panel-title>
+                    {{ db.get('databaseName')?.value || 'Novo Banco de Dados' }}
+                  </mat-panel-title>
+                  <mat-panel-description>
+                    <button 
+                      mat-icon-button 
+                      color="warn" 
+                      type="button" 
+                      (click)="removeDatabase(i); $event.stopPropagation()"
+                      matTooltip="Remover banco de dados">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </mat-panel-description>
+                </mat-expansion-panel-header>
+                
+                <div [formGroupName]="i" class="database-form">
+                  <input type="hidden" formControlName="id">
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Nome do Banco de Dados</mat-label>
+                    <input matInput formControlName="databaseName" required>
+                    <mat-error *ngIf="db.get('databaseName')?.hasError('required')">
+                      Nome do banco de dados é obrigatório
+                    </mat-error>
+                  </mat-form-field>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>Descrição</mat-label>
+                    <textarea matInput formControlName="description" required rows="2"></textarea>
+                    <mat-error *ngIf="db.get('description')?.hasError('required')">
+                      Descrição é obrigatória
+                    </mat-error>
+                  </mat-form-field>
+                  
+                  <mat-form-field appearance="outline">
+                    <mat-label>String de Conexão</mat-label>
+                    <textarea matInput formControlName="connectionString" required rows="3"></textarea>
+                    <mat-error *ngIf="db.get('connectionString')?.hasError('required')">
+                      String de conexão é obrigatória
+                    </mat-error>
+                  </mat-form-field>
+                  
+                  <mat-slide-toggle formControlName="isMandatory" color="accent" class="mandatory-toggle">
+                    Banco de dados obrigatório
+                  </mat-slide-toggle>
+                </div>
+              </mat-expansion-panel>
+            </mat-accordion>
+            
+            <div *ngIf="databases.length === 0" class="empty-databases">
+              <p>Nenhum banco de dados configurado. Adicione pelo menos um banco de dados.</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <div class="form-actions">
+      <button mat-raised-button type="button" (click)="confirmCancel()" [disabled]="isSaving">Cancelar</button>
+      <button 
+        mat-raised-button 
+        color="primary" 
+        type="submit" 
+        [disabled]="isSaving">
+        <mat-icon>save</mat-icon>
+        {{isEditing ? 'Atualizar' : 'Salvar'}}
+      </button>
+    </div>
+  </form>
+</div>

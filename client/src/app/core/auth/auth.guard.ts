@@ -1,21 +1,47 @@
-import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
-import { map, take } from 'rxjs/operators';
+import { Injectable } from '@angular/core';
+import { ActivatedRouteSnapshot, RouterStateSnapshot, Router, UrlTree } from '@angular/router';
+import { Observable, map, take } from 'rxjs';
 import { AuthService } from './auth.service';
 
-export const AuthGuard: CanActivateFn = (route, state) => {
-  const authService = inject(AuthService);
-  const router = inject(Router);
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthGuard {
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
-  return authService.isAuthenticated$.pipe(
-    take(1),
-    map(isAuthenticated => {
-      if (isAuthenticated) {
-        return true;
-      }
-      
-      router.navigate(['/login'], { queryParams: { returnUrl: state.url } });
-      return false;
-    })
-  );
-};
+  canActivate(
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot
+  ): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
+    return this.authService.isAuthenticated$.pipe(
+      take(1),
+      map(isAuthenticated => {
+        // If authenticated, allow access
+        if (isAuthenticated) {
+          // Check for admin requirement
+          const requiresAdmin = route.data['requiresAdmin'];
+          if (requiresAdmin) {
+            const user = this.authService.getCurrentUser();
+            const isAdmin = user && (user.roles.includes('Admin') || user.roles.includes('Administrator'));
+            
+            if (isAdmin) {
+              return true;
+            } else {
+              // Redirect to dashboard if admin is required but user is not admin
+              return this.router.createUrlTree(['/dashboard']);
+            }
+          }
+          return true;
+        }
+        
+        // If not authenticated, redirect to login with return URL
+        return this.router.createUrlTree(['/login'], { 
+          queryParams: { returnUrl: state.url }
+        });
+      })
+    );
+  }
+}

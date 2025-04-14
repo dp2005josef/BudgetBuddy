@@ -1,0 +1,177 @@
+.audit-logs-container {
+  padding: 20px;
+}
+
+.audit-logs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.search-container {
+  margin-bottom: 16px;
+}
+
+.search-field {
+  width: 100%;
+}
+
+.table-container {
+  position: relative;
+  min-height: 200px;
+  margin-bottom: 16px;
+}
+
+.loading-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.7);
+  z-index: 1;
+}
+
+.audit-logs-table {
+  width: 100%;
+}
+
+.message-cell {
+  max-width: 500px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.no-data-row {
+  padding: 16px;
+  text-align: center;
+  font-style: italic;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+/* Log level styles */
+.log-level-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  
+  mat-icon {
+    font-size: 16px;
+    height: 16px;
+    width: 16px;
+  }
+}
+
+.level-error {
+  color: #f44336;
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+.level-warning {
+  color: #ff9800;
+  background-color: rgba(255, 152, 0, 0.1);
+}
+
+.level-info {
+  color: #2196f3;
+  background-color: rgba(33, 150, 243, 0.1);
+}
+
+.level-default {
+  color: #9e9e9e;
+  background-color: rgba(158, 158, 158, 0.1);
+}
+
+/* Modal Styles */
+.log-details-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.log-details-modal {
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.modal-content {
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.detail-section {
+  margin-bottom: 16px;
+}
+
+.detail-label {
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.message-section, .exception-section {
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: monospace;
+}
+
+.properties-section {
+  padding: 12px;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.property-item {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
+  
+  &:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+}
+
+.no-properties {
+  font-style: italic;
+  color: rgba(0, 0, 0, 0.5);
+}

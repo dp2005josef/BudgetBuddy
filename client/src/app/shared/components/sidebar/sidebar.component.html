@@ -1,20 +1,34 @@
-<mat-nav-list>
-  <a mat-list-item routerLink="/dashboard" routerLinkActive="active">
-    <mat-icon matListItemIcon>dashboard</mat-icon>
-    <span matListItemTitle>Dashboard</span>
-  </a>
-  <a mat-list-item routerLink="/clients" routerLinkActive="active">
-    <mat-icon matListItemIcon>business</mat-icon>
-    <span matListItemTitle>Clientes</span>
-  </a>
-  <ng-container *ngIf="isAdmin$ | async">
-    <a mat-list-item routerLink="/users" routerLinkActive="active">
-      <mat-icon matListItemIcon>people</mat-icon>
-      <span matListItemTitle>Usuários</span>
-    </a>
-    <a mat-list-item routerLink="/audit-logs" routerLinkActive="active">
-      <mat-icon matListItemIcon>history</mat-icon>
-      <span matListItemTitle>Logs</span>
-    </a>
-  </ng-container>
-</mat-nav-list>
+<mat-sidenav-container>
+  <div class="sidebar-container">
+    <div class="sidebar-header">
+      <div class="logo-container">
+        <img src="assets/logo.png" alt="ETL Manager Logo" class="logo">
+      </div>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <div class="menu-container">
+      <ng-container *ngIf="currentUser$ | async as user">
+        <div *ngFor="let item of menuItems">
+          <button 
+            mat-button 
+            class="menu-item" 
+            [ngClass]="{'active': router.url.startsWith(item.route)}"
+            (click)="navigateTo(item.route)"
+            *ngIf="!item.requiresAdmin || checkAdminRole(user)">
+            <mat-icon>{{item.icon}}</mat-icon>
+            <span>{{item.name}}</span>
+          </button>
+        </div>
+      </ng-container>
+    </div>
+
+    <div class="sidebar-footer">
+      <mat-divider></mat-divider>
+      <div class="app-version">
+        <span>ETL Manager v1.0.0</span>
+      </div>
+    </div>
+  </div>
+</mat-sidenav-container>

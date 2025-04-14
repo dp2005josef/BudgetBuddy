@@ -1,0 +1,159 @@
+<div class="container">
+  <div class="client-detail-header">
+    <div class="back-button">
+      <button mat-icon-button routerLink="/clients" matTooltip="Voltar para lista de clientes">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h1 *ngIf="client">{{client.clientName}}</h1>
+      <h1 *ngIf="!client && !error">Detalhes do cliente</h1>
+    </div>
+    <div class="action-buttons" *ngIf="client">
+      <button mat-raised-button color="accent" (click)="confirmExecute()" [disabled]="isExecuting">
+        <mat-icon>play_arrow</mat-icon>
+        Executar ETL
+      </button>
+      <button mat-raised-button color="primary" (click)="editClient()">
+        <mat-icon>edit</mat-icon>
+        Editar
+      </button>
+      <button mat-raised-button color="warn" (click)="confirmDelete()">
+        <mat-icon>delete</mat-icon>
+        Excluir
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <div *ngIf="error" class="error-container">
+    <mat-icon color="warn">error</mat-icon>
+    <p>Ocorreu um erro ao carregar os detalhes do cliente.</p>
+    <button mat-raised-button color="primary" (click)="loadClient(client?.id || '')">
+      Tentar novamente
+    </button>
+  </div>
+
+  <div *ngIf="client && !isLoading && !error" class="client-detail-content">
+    <!-- Informações gerais -->
+    <mat-card appearance="outlined" class="detail-card">
+      <mat-card-header>
+        <mat-card-title>Informações Gerais</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="info-grid">
+          <div class="info-item">
+            <strong>Nome do cliente:</strong>
+            <p>{{client.clientName}}</p>
+          </div>
+          <div class="info-item">
+            <strong>Status:</strong>
+            <p>
+              <mat-chip-listbox>
+                <mat-chip [color]="client.isActive ? 'primary' : 'warn'" [selected]="true">
+                  {{client.isActive ? 'Ativo' : 'Inativo'}}
+                </mat-chip>
+              </mat-chip-listbox>
+            </p>
+          </div>
+          <div class="info-item">
+            <strong>Criado em:</strong>
+            <p>{{client.createdAt | date:'dd/MM/yyyy HH:mm'}}</p>
+          </div>
+          <div class="info-item">
+            <strong>Atualizado em:</strong>
+            <p>{{client.updatedAt | date:'dd/MM/yyyy HH:mm'}}</p>
+          </div>
+          <div class="info-item">
+            <strong>Última execução:</strong>
+            <p [ngClass]="getLastExecutionClass()">
+              {{client.lastExecutionTime ? (client.lastExecutionTime | date:'dd/MM/yyyy HH:mm') : 'Nunca executado'}}
+            </p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Configuração do Data Warehouse -->
+    <mat-card appearance="outlined" class="detail-card">
+      <mat-card-header>
+        <mat-card-title>Configuração do Data Warehouse</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="connection-string">
+          <strong>String de conexão:</strong>
+          <p class="connection-value">{{client.dataWarehouseConnectionString}}</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Programação -->
+    <mat-card appearance="outlined" class="detail-card">
+      <mat-card-header>
+        <mat-card-title>Programação</mat-card-title>
+        <mat-slide-toggle 
+          [checked]="client.schedule.isEnabled" 
+          disabled 
+          color="primary">
+          {{client.schedule.isEnabled ? 'Ativado' : 'Desativado'}}
+        </mat-slide-toggle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="schedule-container">
+          <div class="schedule-item">
+            <strong>Dias da semana:</strong>
+            <p>{{formatDaysOfWeek(client.schedule.daysOfWeek)}}</p>
+          </div>
+          <div class="schedule-item">
+            <strong>Horários de execução:</strong>
+            <div class="execution-times">
+              <mat-chip-listbox>
+                <mat-chip *ngFor="let time of client.schedule.executionTimes">
+                  {{time}}
+                </mat-chip>
+              </mat-chip-listbox>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Bancos de dados -->
+    <mat-card appearance="outlined" class="detail-card">
+      <mat-card-header>
+        <mat-card-title>Bancos de dados</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-accordion>
+          <mat-expansion-panel *ngFor="let db of client.databases; let i = index">
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                {{db.databaseName}}
+              </mat-panel-title>
+              <mat-panel-description>
+                <mat-chip-listbox *ngIf="db.isMandatory">
+                  <mat-chip color="accent" selected>Obrigatório</mat-chip>
+                </mat-chip-listbox>
+              </mat-panel-description>
+            </mat-expansion-panel-header>
+            <div class="database-details">
+              <div class="database-item">
+                <strong>Descrição:</strong>
+                <p>{{db.description}}</p>
+              </div>
+              <div class="database-item">
+                <strong>String de conexão:</strong>
+                <p class="connection-value">{{db.connectionString}}</p>
+              </div>
+            </div>
+          </mat-expansion-panel>
+
+          <div *ngIf="client.databases.length === 0" class="empty-state">
+            <p>Nenhum banco de dados configurado</p>
+          </div>
+        </mat-accordion>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

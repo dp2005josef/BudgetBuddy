@@ -1,124 +1,205 @@
-<div class="container">
+<div class="dashboard-container">
   <div class="dashboard-header">
     <h1>Dashboard</h1>
-    <div class="refresh-button">
-      <button mat-mini-fab color="primary" (click)="loadDashboardData()" matTooltip="Atualizar dados">
-        <mat-icon>refresh</mat-icon>
-      </button>
+    
+    <button mat-mini-fab color="primary" (click)="refresh()" [disabled]="isLoading" aria-label="Atualizar Dashboard">
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </div>
+  
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Carregando dados...</p>
+  </div>
+  
+  <div *ngIf="!isLoading && dashboardError" class="error-container">
+    <mat-icon class="error-icon">error_outline</mat-icon>
+    <p>Ocorreu um erro ao carregar os dados do dashboard.</p>
+    <button mat-raised-button color="primary" (click)="refresh()">Tentar Novamente</button>
+  </div>
+  
+  <div *ngIf="!isLoading && !dashboardError" class="dashboard-content">
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+      <mat-card appearance="outlined" class="summary-card">
+        <mat-card-content>
+          <div class="summary-card-content">
+            <div class="summary-card-icon total-clients">
+              <mat-icon>business</mat-icon>
+            </div>
+            <div class="summary-card-info">
+              <span class="summary-card-value">{{totalClients}}</span>
+              <span class="summary-card-label">Total de Clientes</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+      
+      <mat-card appearance="outlined" class="summary-card">
+        <mat-card-content>
+          <div class="summary-card-content">
+            <div class="summary-card-icon active-clients">
+              <mat-icon>check_circle</mat-icon>
+            </div>
+            <div class="summary-card-info">
+              <span class="summary-card-value">{{activeClients}}</span>
+              <span class="summary-card-label">Clientes Ativos</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+      
+      <mat-card appearance="outlined" class="summary-card">
+        <mat-card-content>
+          <div class="summary-card-content">
+            <div class="summary-card-icon inactive-clients">
+              <mat-icon>cancel</mat-icon>
+            </div>
+            <div class="summary-card-info">
+              <span class="summary-card-value">{{inactiveClients}}</span>
+              <span class="summary-card-label">Clientes Inativos</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+      
+      <mat-card appearance="outlined" class="summary-card">
+        <mat-card-content>
+          <div class="summary-card-content">
+            <div class="summary-card-icon error-clients">
+              <mat-icon>warning</mat-icon>
+            </div>
+            <div class="summary-card-info">
+              <span class="summary-card-value">{{clientsWithErrors}}</span>
+              <span class="summary-card-label">Clientes com Erros</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
     </div>
-  </div>
-
-  <div class="loading-container" *ngIf="isLoading">
-    <mat-spinner></mat-spinner>
-  </div>
-
-  <div class="dashboard-error" *ngIf="dashboardError">
-    <mat-card appearance="outlined">
-      <mat-card-content>
-        <div class="error-message">
-          <mat-icon color="warn">error</mat-icon>
-          <span>Ocorreu um erro ao carregar os dados do dashboard. Tente novamente mais tarde.</span>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </div>
-
-  <div class="dashboard-content" *ngIf="!isLoading && !dashboardError">
-    <!-- Clientes ativos -->
-    <mat-card appearance="outlined" class="dashboard-card">
-      <mat-card-header>
-        <mat-card-title>Clientes ativos</mat-card-title>
-        <button mat-button color="primary" (click)="navigateToClientList()">Ver todos</button>
-      </mat-card-header>
-      <mat-card-content>
-        <div *ngIf="clients.length === 0" class="empty-state">
-          <mat-icon>business_off</mat-icon>
-          <p>Nenhum cliente encontrado</p>
-        </div>
-        <div class="client-list-container" *ngIf="clients.length > 0">
-          <table mat-table [dataSource]="clients" class="client-table">
-            <!-- Nome do cliente -->
-            <ng-container matColumnDef="clientName">
-              <th mat-header-cell *matHeaderCellDef>Nome</th>
-              <td mat-cell *matCellDef="let client">
-                <a (click)="navigateToClientDetail(client.id)" class="client-link">
-                  {{client.clientName}}
-                </a>
-              </td>
-            </ng-container>
-
-            <!-- Status -->
-            <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>Status</th>
-              <td mat-cell *matCellDef="let client">
-                <span [ngClass]="getClientStatusClass(client)">
-                  <mat-icon *ngIf="client.isActive && client.lastExecutionTime" class="status-icon">check_circle</mat-icon>
-                  <mat-icon *ngIf="client.isActive && !client.lastExecutionTime" class="status-icon">pending</mat-icon>
-                  <mat-icon *ngIf="!client.isActive" class="status-icon">cancel</mat-icon>
-                  {{client.isActive ? (client.lastExecutionTime ? 'Ativo' : 'Pendente') : 'Inativo'}}
+    
+    <!-- Clients List -->
+    <div class="dashboard-section">
+      <div class="section-header">
+        <h2>Clientes</h2>
+        <button mat-button color="primary" (click)="navigateToClientList()">
+          Ver Todos
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+      
+      <div class="clients-table-container">
+        <table mat-table [dataSource]="clients" class="clients-table">
+          <!-- Client Name Column -->
+          <ng-container matColumnDef="clientName">
+            <th mat-header-cell *matHeaderCellDef>Nome do Cliente</th>
+            <td mat-cell *matCellDef="let client">
+              <a (click)="navigateToClientDetail(client.id)" class="client-link">
+                {{client.clientName}}
+              </a>
+            </td>
+          </ng-container>
+          
+          <!-- Status Column -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let client">
+              <div class="status-indicator" [ngClass]="getClientStatusClass(client)">
+                <mat-icon *ngIf="getClientStatusClass(client) === 'status-success'">check_circle</mat-icon>
+                <mat-icon *ngIf="getClientStatusClass(client) === 'status-error'">error</mat-icon>
+                <mat-icon *ngIf="getClientStatusClass(client) === 'status-inactive'">cancel</mat-icon>
+                <mat-icon *ngIf="getClientStatusClass(client) === 'status-pending'">schedule</mat-icon>
+                <span>
+                  <ng-container [ngSwitch]="getClientStatusClass(client)">
+                    <ng-container *ngSwitchCase="'status-success'">Ativo</ng-container>
+                    <ng-container *ngSwitchCase="'status-error'">Erro</ng-container>
+                    <ng-container *ngSwitchCase="'status-inactive'">Inativo</ng-container>
+                    <ng-container *ngSwitchCase="'status-pending'">Pendente</ng-container>
+                  </ng-container>
                 </span>
-              </td>
-            </ng-container>
-
-            <!-- Última execução -->
-            <ng-container matColumnDef="lastExecution">
-              <th mat-header-cell *matHeaderCellDef>Última execução</th>
-              <td mat-cell *matCellDef="let client">
-                {{client.lastExecutionTime ? (client.lastExecutionTime | date:'dd/MM/yyyy HH:mm') : 'Nunca executado'}}
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="['clientName', 'status', 'lastExecution']"></tr>
-            <tr mat-row *matRowDef="let row; columns: ['clientName', 'status', 'lastExecution']"></tr>
-          </table>
+              </div>
+            </td>
+          </ng-container>
+          
+          <!-- Last Execution Time Column -->
+          <ng-container matColumnDef="lastExecutionTime">
+            <th mat-header-cell *matHeaderCellDef>Última Execução</th>
+            <td mat-cell *matCellDef="let client">
+              <span *ngIf="client.lastExecutionTime">
+                {{client.lastExecutionTime | date:'dd/MM/yyyy HH:mm'}}
+              </span>
+              <span *ngIf="!client.lastExecutionTime" class="no-data">Nunca executado</span>
+            </td>
+          </ng-container>
+          
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let client">
+              <div class="client-actions">
+                <button mat-icon-button color="primary" aria-label="Ver detalhes do cliente" (click)="navigateToClientDetail(client.id)">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                <button 
+                  mat-icon-button 
+                  color="accent"
+                  aria-label="Executar ETL do cliente"
+                  [disabled]="!client.isActive || clientExecuteInProgress"
+                  (click)="executeClient(client.id)">
+                  <mat-spinner *ngIf="clientBeingExecuted === client.id" diameter="20"></mat-spinner>
+                  <mat-icon *ngIf="clientBeingExecuted !== client.id">play_arrow</mat-icon>
+                </button>
+              </div>
+            </td>
+          </ng-container>
+          
+          <tr mat-header-row *matHeaderRowDef="['clientName', 'status', 'lastExecutionTime', 'actions']"></tr>
+          <tr mat-row *matRowDef="let row; columns: ['clientName', 'status', 'lastExecutionTime', 'actions'];"></tr>
+          
+          <!-- Row shown when there are no clients -->
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell" colspan="4" class="no-data-row">
+              Nenhum cliente encontrado
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Recent Logs -->
+    <div class="dashboard-section">
+      <div class="section-header">
+        <h2>Logs Recentes</h2>
+        <button mat-button color="primary" (click)="navigateToAuditLogs()">
+          Ver Todos
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+      
+      <div class="logs-container">
+        <mat-list *ngIf="recentLogs.length > 0">
+          <mat-list-item *ngFor="let log of recentLogs" class="log-item">
+            <div class="log-level" [ngClass]="getLevelClass(log.level)">
+              <mat-icon *ngIf="log.level.toLowerCase() === 'error'">error</mat-icon>
+              <mat-icon *ngIf="log.level.toLowerCase() === 'warning'">warning</mat-icon>
+              <mat-icon *ngIf="log.level.toLowerCase() === 'information'">info</mat-icon>
+            </div>
+            <div class="log-content">
+              <div class="log-message">
+                {{log.message}}
+              </div>
+              <div class="log-timestamp">
+                {{log.timeStamp | date:'dd/MM/yyyy HH:mm:ss'}}
+              </div>
+            </div>
+          </mat-list-item>
+        </mat-list>
+        
+        <div *ngIf="recentLogs.length === 0" class="no-logs">
+          <mat-icon>info</mat-icon>
+          <p>Nenhum log recente encontrado.</p>
         </div>
-      </mat-card-content>
-    </mat-card>
-
-    <!-- Logs recentes -->
-    <mat-card appearance="outlined" class="dashboard-card">
-      <mat-card-header>
-        <mat-card-title>Logs recentes</mat-card-title>
-        <button mat-button color="primary" (click)="navigateToAuditLogs()">Ver todos</button>
-      </mat-card-header>
-      <mat-card-content>
-        <div *ngIf="recentLogs.length === 0" class="empty-state">
-          <mat-icon>history_toggle_off</mat-icon>
-          <p>Nenhum log encontrado</p>
-        </div>
-        <div class="log-list-container" *ngIf="recentLogs.length > 0">
-          <table mat-table [dataSource]="recentLogs" class="log-table">
-            <!-- ID -->
-            <ng-container matColumnDef="id">
-              <th mat-header-cell *matHeaderCellDef>ID</th>
-              <td mat-cell *matCellDef="let log">{{log.id}}</td>
-            </ng-container>
-
-            <!-- Nível -->
-            <ng-container matColumnDef="level">
-              <th mat-header-cell *matHeaderCellDef>Nível</th>
-              <td mat-cell *matCellDef="let log" [ngClass]="getLevelClass(log.level)">
-                {{log.level}}
-              </td>
-            </ng-container>
-
-            <!-- Mensagem -->
-            <ng-container matColumnDef="message">
-              <th mat-header-cell *matHeaderCellDef>Mensagem</th>
-              <td mat-cell *matCellDef="let log">{{log.message}}</td>
-            </ng-container>
-
-            <!-- Data -->
-            <ng-container matColumnDef="timeStamp">
-              <th mat-header-cell *matHeaderCellDef>Data</th>
-              <td mat-cell *matCellDef="let log">{{log.timeStamp | date:'dd/MM/yyyy HH:mm:ss'}}</td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="['id', 'level', 'message', 'timeStamp']"></tr>
-            <tr mat-row *matRowDef="let row; columns: ['id', 'level', 'message', 'timeStamp']"></tr>
-          </table>
-        </div>
-      </mat-card-content>
-    </mat-card>
+      </div>
+    </div>
   </div>
 </div>

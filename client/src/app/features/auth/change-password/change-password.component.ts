@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ChangePasswordRequest } from '../../../core/models/user.model';
 
 @Component({
   selector: 'app-change-password',
@@ -19,34 +20,33 @@ export class ChangePasswordComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
-    private snackBar: MatSnackBar,
-    private router: Router
+    private router: Router,
+    private snackBar: MatSnackBar
   ) { }
 
   ngOnInit(): void {
+    this.initForm();
+  }
+
+  initForm(): void {
     this.changePasswordForm = this.fb.group({
       currentPassword: ['', [Validators.required]],
       newPassword: ['', [Validators.required, Validators.minLength(6)]],
       confirmPassword: ['', [Validators.required]]
-    }, { validators: this.passwordMatchValidator });
+    }, {
+      validators: this.passwordMatchValidator
+    });
   }
 
-  passwordMatchValidator(form: FormGroup) {
-    const newPassword = form.get('newPassword')?.value;
-    const confirmPassword = form.get('confirmPassword')?.value;
-
-    if (newPassword !== confirmPassword) {
-      form.get('confirmPassword')?.setErrors({ passwordMismatch: true });
-    } else {
-      const confirmPasswordControl = form.get('confirmPassword');
-      if (confirmPasswordControl?.hasError('passwordMismatch')) {
-        // Se não houver outros erros além de passwordMismatch, limpe os erros
-        const errors = { ...confirmPasswordControl.errors };
-        delete errors['passwordMismatch'];
-        confirmPasswordControl?.setErrors(Object.keys(errors).length ? errors : null);
-      }
+  passwordMatchValidator(group: FormGroup): {[key: string]: any} | null {
+    const newPassword = group.get('newPassword')?.value;
+    const confirmPassword = group.get('confirmPassword')?.value;
+    
+    if (newPassword && confirmPassword && newPassword !== confirmPassword) {
+      group.get('confirmPassword')?.setErrors({ mismatch: true });
+      return { mismatch: true };
     }
-
+    
     return null;
   }
 
@@ -54,11 +54,16 @@ export class ChangePasswordComponent implements OnInit {
     if (this.changePasswordForm.invalid) {
       return;
     }
-
+    
     this.isLoading = true;
-    const data = this.changePasswordForm.value;
-
-    this.authService.changePassword(data).subscribe({
+    
+    const request: ChangePasswordRequest = {
+      currentPassword: this.changePasswordForm.value.currentPassword,
+      newPassword: this.changePasswordForm.value.newPassword,
+      confirmPassword: this.changePasswordForm.value.confirmPassword
+    };
+    
+    this.authService.changePassword(request).subscribe({
       next: () => {
         this.isLoading = false;
         this.snackBar.open('Senha alterada com sucesso!', 'Fechar', { duration: 5000 });
@@ -66,17 +71,13 @@ export class ChangePasswordComponent implements OnInit {
       },
       error: (error) => {
         this.isLoading = false;
-        console.error('Change password error:', error);
-        
-        let errorMessage = 'Erro ao alterar senha';
-        if (error.error?.message) {
-          errorMessage = error.error.message;
-        } else if (error.status === 400) {
-          errorMessage = 'Senha atual incorreta ou formato inválido';
-        }
-        
+        const errorMessage = error.error?.message || 'Erro ao alterar senha. Verifique sua senha atual.';
         this.snackBar.open(errorMessage, 'Fechar', { duration: 5000 });
       }
     });
+  }
+
+  onCancel(): void {
+    this.router.navigate(['/dashboard']);
   }
 }

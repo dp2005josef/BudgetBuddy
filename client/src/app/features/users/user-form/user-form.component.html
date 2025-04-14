@@ -1,0 +1,117 @@
+<div class="container">
+  <div class="form-header">
+    <div class="back-button">
+      <button mat-icon-button (click)="confirmCancel()" matTooltip="Voltar">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <h1>{{isEditing ? 'Editar' : 'Novo'}} Usuário</h1>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner></mat-spinner>
+  </div>
+
+  <form [formGroup]="userForm" (ngSubmit)="onSubmit()" *ngIf="!isLoading">
+    <div class="form-content">
+      <mat-card appearance="outlined" class="form-card">
+        <mat-card-header>
+          <mat-card-title>Informações do Usuário</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="form-fields">
+            <mat-form-field appearance="outline">
+              <mat-label>Nome</mat-label>
+              <input matInput formControlName="name" required>
+              <mat-error *ngIf="userForm.get('name')?.hasError('required')">
+                Nome é obrigatório
+              </mat-error>
+              <mat-error *ngIf="userForm.get('name')?.hasError('maxlength')">
+                Nome deve ter no máximo 100 caracteres
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Email</mat-label>
+              <input matInput formControlName="email" required type="email">
+              <mat-error *ngIf="userForm.get('email')?.hasError('required')">
+                Email é obrigatório
+              </mat-error>
+              <mat-error *ngIf="userForm.get('email')?.hasError('email')">
+                Email inválido
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Senha {{isEditing ? '(Deixe em branco para manter a atual)' : ''}}</mat-label>
+              <input matInput formControlName="password" [type]="hidePassword ? 'password' : 'text'" [required]="!isEditing">
+              <button 
+                mat-icon-button 
+                matSuffix 
+                type="button"
+                (click)="hidePassword = !hidePassword" 
+                [attr.aria-label]="'Mostrar senha'"
+                [attr.aria-pressed]="!hidePassword">
+                <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+              </button>
+              <mat-error *ngIf="userForm.get('password')?.hasError('required')">
+                Senha é obrigatória
+              </mat-error>
+              <mat-error *ngIf="userForm.get('password')?.hasError('minlength')">
+                Senha deve ter no mínimo 6 caracteres
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Confirmar Senha</mat-label>
+              <input matInput formControlName="confirmPassword" [type]="hideConfirmPassword ? 'password' : 'text'" [required]="!isEditing">
+              <button 
+                mat-icon-button 
+                matSuffix 
+                type="button"
+                (click)="hideConfirmPassword = !hideConfirmPassword" 
+                [attr.aria-label]="'Mostrar confirmação de senha'"
+                [attr.aria-pressed]="!hideConfirmPassword">
+                <mat-icon>{{hideConfirmPassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+              </button>
+              <mat-error *ngIf="userForm.get('confirmPassword')?.hasError('required')">
+                Confirmação de senha é obrigatória
+              </mat-error>
+              <mat-error *ngIf="userForm.get('confirmPassword')?.hasError('mismatch')">
+                As senhas não coincidem
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Perfis</mat-label>
+              <mat-select formControlName="roles" multiple required>
+                <mat-option *ngFor="let role of availableRoles" [value]="role.value">
+                  {{role.label}}
+                </mat-option>
+              </mat-select>
+              <mat-error *ngIf="userForm.get('roles')?.hasError('required')">
+                Selecione pelo menos um perfil
+              </mat-error>
+            </mat-form-field>
+
+            <mat-slide-toggle formControlName="isActive" color="primary" *ngIf="isEditing">
+              Usuário Ativo
+            </mat-slide-toggle>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <div class="form-actions">
+      <button mat-raised-button type="button" (click)="confirmCancel()" [disabled]="isSaving">Cancelar</button>
+      <button 
+        mat-raised-button 
+        color="primary" 
+        type="submit" 
+        [disabled]="isSaving">
+        <mat-icon>save</mat-icon>
+        {{isEditing ? 'Atualizar' : 'Salvar'}}
+      </button>
+    </div>
+  </form>
+</div>
